@@ -1,0 +1,42 @@
+services:
+  # --- SCRAPPER MICROSERVICE ---
+  scrapper-db:
+    container_name: scrapper-db
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: postgres_scrapper
+      POSTGRES_PASSWORD: postgres_scrapper_pass
+      POSTGRES_DB: scrapper_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - scrapper_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres_scrapper -d scrapper" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+#  scrapper-app:
+#    container_name: scrapper-app
+#    build:
+#      context: ./
+#      dockerfile: scrapper-backend-dev.Dockerfile
+#    depends_on:
+#      - scrapper-db
+#    environment:
+#      SPRING_PROFILES_ACTIVE: docker
+#      DB_HOST: scrapper-db
+#      DB_PORT: "5432"
+#      DB_NAME: scrapper_db
+#      DB_USERNAME: postgres_scrapper
+#      DB_PASSWORD: postgres_scrapper_pass
+#    ports:
+#      - "8282:8282"
+#    deploy:
+#      replicas: 1
+#      restart_policy:
+#        condition: on-failure
+
+volumes:
+    scrapper_db_data:
