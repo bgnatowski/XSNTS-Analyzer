@@ -20,3 +20,8 @@ spring:
       format_sql: true
     database: postgresql
     databasePlatform: org.hibernate.dialect.PostgreSQLDialect
+
+x:
+  username: dummy
+  email: dummy@gmail.com
+  password: dummy
