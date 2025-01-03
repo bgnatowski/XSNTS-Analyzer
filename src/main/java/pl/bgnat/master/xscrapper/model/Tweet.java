@@ -40,6 +40,7 @@ public class Tweet {
     @Column(name = "comment_count")
     private Long commentCount;
 
+    @Column(name = "media_links")
     private String mediaLinks;      // linki do zdjęć/gifów/nagrań (opcjonalnie w formie JSON lub rozbijać w osobnej tabeli do przemyslenia)
 
     @Column(name = "post_date", nullable = false)
