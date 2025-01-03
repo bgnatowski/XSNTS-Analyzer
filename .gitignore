@@ -39,3 +39,4 @@ build/
 .env
 cookies.json
 application-secret.yml.
+src/main/resources/application-secret.yaml
