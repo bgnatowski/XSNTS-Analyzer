@@ -28,7 +28,7 @@ public class Tweet {
 
     @Column(name = "username", nullable = false)
     private String username;        // @nazwa_uzytkownika
-    @Column(name = "content", length = 4000,  nullable = false)
+    @Column(name = "content", length = 4000,  nullable = true)
     private String content;         // treść (tekst) tweetu
     @Column(name = "link", nullable = false)
     private String link;            // link do posta
@@ -40,7 +40,7 @@ public class Tweet {
     @Column(name = "comment_count")
     private Long commentCount;
 
-    @Column(name = "media_links")
+    @Column(name = "media_links", nullable = true)
     private String mediaLinks;      // linki do zdjęć/gifów/nagrań (opcjonalnie w formie JSON lub rozbijać w osobnej tabeli do przemyslenia)
 
     @Column(name = "post_date", nullable = false)

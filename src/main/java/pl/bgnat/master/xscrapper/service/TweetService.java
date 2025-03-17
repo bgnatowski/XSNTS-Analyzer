@@ -1,21 +1,29 @@
 package pl.bgnat.master.xscrapper.service;
 
-import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.chrome.ChromeDriver;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
+import pl.bgnat.master.xscrapper.dto.TweetDto;
+import pl.bgnat.master.xscrapper.mapper.TweetMapper;
 import pl.bgnat.master.xscrapper.model.Tweet;
+import pl.bgnat.master.xscrapper.repository.TweetRepository;
+import pl.bgnat.master.xscrapper.utils.SeleniumHelper;
 
 import java.time.LocalDateTime;
 
 import static org.springframework.util.StringUtils.hasLength;
 import static pl.bgnat.master.xscrapper.utils.TweetParser.*;
-import static pl.bgnat.master.xscrapper.utils.TweetParser.parseCountFromAriaLabel;
 
 @Service
 @Slf4j
-@NoArgsConstructor
+@AllArgsConstructor
 public class TweetService {
+    private final ChromeDriver driver;
+    private final TweetRepository tweetRepository;
+
     public Tweet parseTweet(WebElement tweetElement) {
         log.info("Start parseTweet");
         Tweet tweet = new Tweet();
@@ -59,5 +67,19 @@ public class TweetService {
 
         log.info("Parsed tweet: {}", tweet);
         return tweet;
+    }
+
+    public TweetDto saveTweet(Tweet tweet){
+        log.info("Start saveTweet");
+        if(!StringUtils.hasLength(tweet.getLink()))
+            return null;
+
+        Tweet saved = tweetRepository.save(tweet);
+        return TweetMapper.INSTANCE.toDto(saved);
+    }
+
+    public void refreshTweets() {
+        String buttonXPath = "//div[@data-testid='cellInnerDiv']//button[descendant::span[contains(text(), 'Show')]]";
+        SeleniumHelper.clickButtonIfExists(driver, buttonXPath);
     }
 }
