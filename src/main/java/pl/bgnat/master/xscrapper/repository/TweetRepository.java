@@ -6,4 +6,6 @@ import pl.bgnat.master.xscrapper.model.Tweet;
 
 @Repository
 public interface TweetRepository extends JpaRepository<Tweet, Long> {
+    boolean existsTweetByLink(String link);
+    Tweet findByLink(String link);
 }

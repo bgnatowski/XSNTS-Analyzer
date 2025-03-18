@@ -13,6 +13,7 @@ import pl.bgnat.master.xscrapper.repository.TweetRepository;
 import pl.bgnat.master.xscrapper.utils.SeleniumHelper;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import static org.springframework.util.StringUtils.hasLength;
 import static pl.bgnat.master.xscrapper.utils.TweetParser.*;
@@ -61,9 +62,13 @@ public class TweetService {
         log.info("After parseRetweet");
 
         log.info("Before parseLike");
-        Long likeCount   = parseCountFromAriaLabel(tweetElement, "like");
+        Long likeCount = parseCountFromAriaLabel(tweetElement, "like");
         tweet.setLikeCount(likeCount);
         log.info("After parseLike");
+
+        LocalDateTime now = LocalDateTime.now();
+        tweet.setCreationDate(now);
+        tweet.setUpdateDate(now);
 
         log.info("Parsed tweet: {}", tweet);
         return tweet;
@@ -81,5 +86,25 @@ public class TweetService {
     public void refreshTweets() {
         String buttonXPath = "//div[@data-testid='cellInnerDiv']//button[descendant::span[contains(text(), 'Show')]]";
         SeleniumHelper.clickButtonIfExists(driver, buttonXPath);
+    }
+
+    public boolean isExists(Tweet tweetObj) {
+        String link = tweetObj.getLink();
+        return tweetRepository.existsTweetByLink(link);
+    }
+
+    public void updateTweet(Tweet tweetObj) {
+        String link = tweetObj.getLink();
+        Tweet existingTweet = tweetRepository.findByLink(link);
+        existingTweet.setContent(tweetObj.getContent());
+        existingTweet.setLikeCount(tweetObj.getLikeCount());
+        existingTweet.setRepostCount(tweetObj.getRepostCount());
+        existingTweet.setCommentCount(tweetObj.getCommentCount());
+        existingTweet.setUpdateDate(LocalDateTime.now());
+        tweetRepository.save(tweetObj);
+    }
+
+    public void saveTweets(List<Tweet> tweetsList) {
+        tweetRepository.saveAllAndFlush(tweetsList);
     }
 }

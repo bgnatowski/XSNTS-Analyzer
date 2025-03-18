@@ -15,7 +15,13 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @JsonIgnoreProperties
 @Entity(name = "Tweet")
-@Table(name = "tweet")
+@Table(name = "tweet",
+        uniqueConstraints = {
+                @UniqueConstraint(
+                        name = "tweet_link_constraint",
+                        columnNames = "link"
+                )
+        })
 public class Tweet {
     @Id
     @SequenceGenerator(
@@ -28,10 +34,10 @@ public class Tweet {
 
     @Column(name = "username", nullable = false)
     private String username;        // @nazwa_uzytkownika
-    @Column(name = "content", length = 4000,  nullable = true)
-    private String content;         // treść (tekst) tweetu
-    @Column(name = "link", nullable = false)
-    private String link;            // link do posta
+    @Column(name = "content", length = 4000)
+    private String content;
+    @Column(name = "link", nullable = false, unique = true)
+    private String link;
 
     @Column(name = "like_count")
     private Long likeCount;
@@ -40,9 +46,13 @@ public class Tweet {
     @Column(name = "comment_count")
     private Long commentCount;
 
-    @Column(name = "media_links", nullable = true)
+    @Column(name = "media_links")
     private String mediaLinks;      // linki do zdjęć/gifów/nagrań (opcjonalnie w formie JSON lub rozbijać w osobnej tabeli do przemyslenia)
 
     @Column(name = "post_date", nullable = false)
     private LocalDateTime postDate;
+    @Column(name = "creation_date", nullable = false)
+    private LocalDateTime creationDate;
+    @Column(name = "update_date", nullable = false)
+    private LocalDateTime updateDate;
 }
