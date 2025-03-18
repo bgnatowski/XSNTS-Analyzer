@@ -58,8 +58,6 @@ public class ScrapperService {
         List<WebElement> trendCells = waitForElements(trendingDriver,
                 By.xpath(".//div[@data-testid='trend' and @role='link']"));
 
-        // Używamy puli wątków – dla przykładu przetworzymy 5 trendów
-        ExecutorService executor = Executors.newFixedThreadPool(5);
         int trendsToProcess = Math.min(5, trendCells.size());
         for (int i = 0; i < 3; i++) {
             WebElement cell = trendCells.get(i);
@@ -68,40 +66,29 @@ public class ScrapperService {
                 WebElement trendTextElement = innerDiv.findElement(By.xpath("./div[2]//span"));
                 String trendKeyword = trendTextElement.getText();
                 if (StringUtils.hasLength(trendKeyword)) {
+                    // Tworzymy nową instancję sterownika – zamiast logowania, kopiujemy sesję (cookies)
+                    ChromeDriver localDriver = driverProvider.getObject();
+                    try {
+                        // Skopiuj ciasteczka (sesję) z trendingDriver do localDriver
+                        loginService.copyCookies(trendingDriver, localDriver);
 
-                        // Tworzymy nową instancję sterownika – zamiast logowania, kopiujemy sesję (cookies)
-                        ChromeDriver localDriver = driverProvider.getObject();
-                        try {
-                            // Skopiuj ciasteczka (sesję) z trendingDriver do localDriver
-                            loginService.copyCookies(trendingDriver, localDriver);
-
-                            // Tworzymy adres wyszukiwania z nazwą trendu
-                            String searchUrl = "https://x.com/search?q=" +
-                                    URLEncoder.encode(trendKeyword, StandardCharsets.UTF_8);
-                            localDriver.get(searchUrl);
-                            waitRandom();
-                            // Scrapujemy tweety na stronie wyszukiwania
-                            scrapeTweets(localDriver);
-                        } catch (Exception e) {
-                            log.error("Błąd przy przetwarzaniu trendu: {}", trendKeyword, e);
-                        } finally {
-                            localDriver.quit();
-                        }
+                        // Tworzymy adres wyszukiwania z nazwą trendu
+                        String searchUrl = "https://x.com/search?q=" +
+                                URLEncoder.encode(trendKeyword, StandardCharsets.UTF_8);
+                        localDriver.get(searchUrl);
+                        waitRandom();
+                        // Scrapujemy tweety na stronie wyszukiwania
+                        scrapeTweets(localDriver);
+                    } catch (Exception e) {
+                        log.error("Błąd przy przetwarzaniu trendu: {}", trendKeyword, e);
+                    } finally {
+                        localDriver.quit();
+                    }
                 }
             } catch (NoSuchElementException e) {
                 log.warn("Nie znaleziono elementu trend w elemencie cellInnerDiv", e);
             }
         }
-        executor.shutdown();
-        try {
-            if (!executor.awaitTermination(30, TimeUnit.MINUTES)) {
-                executor.shutdownNow();
-            }
-        } catch (InterruptedException e) {
-            executor.shutdownNow();
-            Thread.currentThread().interrupt();
-        }
-
     }
 
     public void scrapeTweets(ChromeDriver driver) {
