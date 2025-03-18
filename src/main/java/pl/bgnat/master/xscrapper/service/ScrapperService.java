@@ -29,15 +29,14 @@ import static pl.bgnat.master.xscrapper.utils.WaitUtils.waitRandom;
 @Slf4j
 public class ScrapperService {
     private static final int MAX_TWEETS = 200;
-    public static final String RETURN_DOCUMENT_BODY_SCROLL_HEIGHT = "return document.body.scrollHeight";
     public static final String ENDLESS_SCROLL_SCRIPT = "window.scrollTo(0,document.body.scrollHeight)";
     private final LoginService loginService;
     private final TweetService tweetService;
     private final ObjectProvider<ChromeDriver> driverProvider;
 
-//    @Scheduled(fixedRate = 3600000)
+    //    @Scheduled(fixedRate = 3600000)
 //    @PostConstruct
-    public void scheduledScrapeForYou(){
+    public void scheduledScrapeForYou() {
         ChromeDriver forYouDriver = driverProvider.getObject();
         loginService.loginToAccount(forYouDriver);
         scrapeTweets(forYouDriver);
@@ -48,39 +47,46 @@ public class ScrapperService {
     //    @Scheduled(fixedRate = 3600000)
     @PostConstruct
     public void scheduledScrapeTrending() {
+        //Tworzymy główną instancję sterownika i logujemy się –sesja jest utrzymywana
         ChromeDriver trendingDriver = driverProvider.getObject();
 
         loginService.loginToAccount(trendingDriver);
         waitRandom();
         trendingDriver.get("https://x.com/explore/tabs/trending");
         waitRandom();
-        List<WebElement> trendCells = waitForElements(trendingDriver, By.xpath(".//div[@data-testid='trend' and @role='link']"));
+        // Pobieramy elementy trendów – selektor odpowiada divowi z atrybutami data-testid='trend' i role='link'
+        List<WebElement> trendCells = waitForElements(trendingDriver,
+                By.xpath(".//div[@data-testid='trend' and @role='link']"));
+
+        // Używamy puli wątków – dla przykładu przetworzymy 5 trendów
         ExecutorService executor = Executors.newFixedThreadPool(5);
-        for (int i = 0; i < 5; i++) {
+        int trendsToProcess = Math.min(5, trendCells.size());
+        for (int i = 0; i < 3; i++) {
             WebElement cell = trendCells.get(i);
             try {
-                // Z pierwszego dziecka pobieramy wrapper z całą zawartością
                 WebElement innerDiv = cell.findElement(By.xpath("./div"));
-                // Drugi div wewnątrz wrappera zawiera tekst trendu (np. 'Wrzosek')
                 WebElement trendTextElement = innerDiv.findElement(By.xpath("./div[2]//span"));
                 String trendKeyword = trendTextElement.getText();
-
                 if (StringUtils.hasLength(trendKeyword)) {
-                    executor.submit(() -> {
+
+                        // Tworzymy nową instancję sterownika – zamiast logowania, kopiujemy sesję (cookies)
                         ChromeDriver localDriver = driverProvider.getObject();
                         try {
-                            loginService.loginToAccount(localDriver);
+                            // Skopiuj ciasteczka (sesję) z trendingDriver do localDriver
+                            loginService.copyCookies(trendingDriver, localDriver);
+
                             // Tworzymy adres wyszukiwania z nazwą trendu
                             String searchUrl = "https://x.com/search?q=" +
                                     URLEncoder.encode(trendKeyword, StandardCharsets.UTF_8);
                             localDriver.get(searchUrl);
                             waitRandom();
-                            // Uruchamiamy scrapowanie tweetów (endless scroll) na stronie wyszukiwania
+                            // Scrapujemy tweety na stronie wyszukiwania
                             scrapeTweets(localDriver);
                         } catch (Exception e) {
                             log.error("Błąd przy przetwarzaniu trendu: {}", trendKeyword, e);
+                        } finally {
+                            localDriver.quit();
                         }
-                    });
                 }
             } catch (NoSuchElementException e) {
                 log.warn("Nie znaleziono elementu trend w elemencie cellInnerDiv", e);
@@ -95,11 +101,11 @@ public class ScrapperService {
             executor.shutdownNow();
             Thread.currentThread().interrupt();
         }
+
     }
 
     public void scrapeTweets(ChromeDriver driver) {
         try {
-            long initialHeight = (long) driver.executeScript(RETURN_DOCUMENT_BODY_SCROLL_HEIGHT);
             int tweetCount = 0;
             int repetedTweetCount = 0;
 
@@ -113,8 +119,8 @@ public class ScrapperService {
                     List<Tweet> tweetsList = new ArrayList<>();
                     for (WebElement tweetElement : tweetsElements) {
                         Tweet tweet = tweetService.parseTweet(tweetElement);
-                        if(StringUtils.hasLength(tweet.getLink())){
-                            if(!tweetService.isExists(tweet)) {
+                        if (StringUtils.hasLength(tweet.getLink())) {
+                            if (!tweetService.isExists(tweet)) {
                                 tweetsList.add(tweet);
                             } else {
                                 log.warn("Ponownie ten sam tweet");
@@ -126,23 +132,19 @@ public class ScrapperService {
 
                     tweetService.saveTweets(tweetsList);
 
-                    if(repetedTweetCount >= 50)
+                    if (repetedTweetCount >= 50)
                         break;
 
-                    long currentHeight = (long) driver.executeScript(RETURN_DOCUMENT_BODY_SCROLL_HEIGHT);
-
-                    if (initialHeight == currentHeight || tweetCount >= MAX_TWEETS) {
+                    if (tweetCount >= MAX_TWEETS) {
                         tweetCount = 0;
                         refreshPage(driver);
                     }
-
-                    initialHeight = currentHeight;
                 }
                 log.info("Nie znaleziono żadnych tweetów");
-                refreshPage(driver);
             }
             log.info("Kończę endless scroll w scrapeTweets()");
         } catch (NoSuchElementException | NullPointerException e) {
+            refreshPage(driver);
             log.info("Nie udało się znaleźć elementów w elemencie tweeta");
         }
     }
