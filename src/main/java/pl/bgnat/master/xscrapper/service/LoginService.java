@@ -27,7 +27,6 @@ import static pl.bgnat.master.xscrapper.utils.WaitUtils.waitRandom;
 public class LoginService {
     private static final String BASE_URL = "https://www.x.com/";
     private static final String COOKIE_FILE = "cookies.json";
-    private final ChromeDriver driver;
     private final ObjectMapper objectMapper;
 
     @Value("${x.username}")
@@ -37,24 +36,25 @@ public class LoginService {
     @Value("${x.password}")
     private String password;
 
-    public void loginToAccount() {
-        loadCookiesFromFile();
-        if (!isLoggedIn()) {
+    // Przeciążona metoda – logowanie przy użyciu przekazanego drivera
+    public void loginToAccount(ChromeDriver driver) {
+        loadCookiesFromFile(driver);
+        if (!isLoggedIn(driver)) {
             log.info("Nie jesteśmy zalogowani – wykonuję logowanie...");
-
             driver.get(BASE_URL);
-            acceptCookies();
-            login();
 
+            acceptCookies(driver);
+            login(driver);
             waitRandom();
-            saveCookiesToFile();
+
+            saveCookiesToFile(driver);
             log.info("Zalogowano.");
         } else {
             log.info("Wygląda na to, że już jesteśmy zalogowani (na podstawie cookies) – pomijam logowanie.");
         }
     }
 
-    private void acceptCookies() {
+    private void acceptCookies(ChromeDriver driver) {
         try {
             log.info("Before accepting cookies");
             By acceptCookiesButtonLocator = By.xpath("//span[text()='Accept all cookies']");
@@ -70,7 +70,7 @@ public class LoginService {
         }
     }
 
-    private boolean isLoggedIn() {
+    private boolean isLoggedIn(ChromeDriver driver) {
         try {
             driver.get(BASE_URL);
             WebElement firstTweet = waitForElement(driver, By.xpath("//article[@data-testid='tweet']"));
@@ -84,7 +84,7 @@ public class LoginService {
         return false;
     }
 
-    private void login() {
+    private void login(ChromeDriver driver) {
         try {
             log.info("Before loginButton");
             WebElement loginButton = waitForElement(driver, By.xpath("//a[@data-testid='loginButton']"));
@@ -135,7 +135,7 @@ public class LoginService {
         }
     }
 
-    private void saveCookiesToFile() {
+    private void saveCookiesToFile(ChromeDriver driver) {
         Set<Cookie> cookies = driver.manage().getCookies();
 
         List<CookieDto> cookieDtoList = cookies.stream()
@@ -151,7 +151,7 @@ public class LoginService {
         }
     }
 
-    private void loadCookiesFromFile() {
+    private void loadCookiesFromFile(ChromeDriver driver) {
         File file = new File(COOKIE_FILE);
         if (!file.exists()) {
             log.info("Plik {} nie istnieje. Brak cookies do wczytania.", COOKIE_FILE);
@@ -172,5 +172,17 @@ public class LoginService {
         } catch (IOException e) {
             log.error("IOException przy wczytywaniu cookiesow. Message: {}", e.getMessage());
         }
+    }
+
+    // Metoda kopiująca ciasteczka z jednego drivera do drugiego
+    public void copyCookies(ChromeDriver source, ChromeDriver destination) {
+        // Najpierw otwieramy stronę główną na driverze docelowym (potrzebne do ustawienia ciasteczek)
+        destination.get(BASE_URL);
+        Set<Cookie> cookies = source.manage().getCookies();
+        for (Cookie cookie : cookies) {
+            destination.manage().addCookie(cookie);
+        }
+        destination.navigate().refresh();
+        waitRandom();
     }
 }

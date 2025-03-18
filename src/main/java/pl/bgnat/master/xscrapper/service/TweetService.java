@@ -22,7 +22,6 @@ import static pl.bgnat.master.xscrapper.utils.TweetParser.*;
 @Slf4j
 @AllArgsConstructor
 public class TweetService {
-    private final ChromeDriver driver;
     private final TweetRepository tweetRepository;
 
     public Tweet parseTweet(WebElement tweetElement) {
@@ -81,11 +80,6 @@ public class TweetService {
 
         Tweet saved = tweetRepository.save(tweet);
         return TweetMapper.INSTANCE.toDto(saved);
-    }
-
-    public void refreshTweets() {
-        String buttonXPath = "//div[@data-testid='cellInnerDiv']//button[descendant::span[contains(text(), 'Show')]]";
-        SeleniumHelper.clickButtonIfExists(driver, buttonXPath);
     }
 
     public boolean isExists(Tweet tweetObj) {
