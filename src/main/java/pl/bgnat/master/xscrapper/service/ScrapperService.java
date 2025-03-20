@@ -27,7 +27,7 @@ import static pl.bgnat.master.xscrapper.utils.WaitUtils.waitRandom;
 @RequiredArgsConstructor
 @Slf4j
 public class ScrapperService {
-    private static final int MAX_TWEETS = 200;
+    private static final int MAX_TWEETS = 50;
     public static final String ENDLESS_SCROLL_SCRIPT = "window.scrollTo(0,document.body.scrollHeight)";
     private final LoginService loginService;
     private final TweetService tweetService;
@@ -42,21 +42,26 @@ public class ScrapperService {
         forYouDriver.quit();
     }
 
+    @PostConstruct()
+    public void scheduledScrapeTrending(){
+        scheduledScrapeTrending(true);
+    }
 
     //    @Scheduled(fixedRate = 3600000)
-    @PostConstruct
-    public void scheduledScrapeTrending() {
+    public void scheduledScrapeTrending(boolean isNewest) {
         ChromeDriver trendingDriver = driverProvider.getObject();
 
+        String newest = isNewest ? "&f=live" : "";
+
         loginService.loginToAccount(trendingDriver);
-        waitRandom();
+        waitRandom(trendingDriver, 2, 10);
         trendingDriver.get("https://x.com/explore/tabs/trending");
-        waitRandom();
+        waitRandom(trendingDriver, 1, 5);
 
         List<WebElement> trendCells = waitForElements(trendingDriver,
                 By.xpath(".//div[@data-testid='trend' and @role='link']"));
 
-        ExecutorService executor = Executors.newFixedThreadPool(10);
+        ExecutorService executor = Executors.newFixedThreadPool(5);
 
         for (int i = 0; i < 10; i++) {
             WebElement cell = trendCells.get(i);
@@ -73,10 +78,10 @@ public class ScrapperService {
                             loginService.copyCookies(trendingDriver, localDriver);
 
                             String searchUrl = "https://x.com/search?q=" + URLEncoder.encode(trendKeyword, StandardCharsets.UTF_8);
-                            log.info("Otwieram {} trendujacy tag: {}, link: {}", finalI+1, trendKeyword, searchUrl);
-                            localDriver.get(searchUrl);
+                            log.info("Otwieram {} trendujacy tag: {}, link: {}", finalI+1, trendKeyword, searchUrl+newest);
+                            localDriver.get(searchUrl+newest);
 
-                            waitRandom();
+                            waitRandom(localDriver, 2, 10);
                             scrapeTweets(localDriver);
                         } catch (Exception e) {
                             log.error("Błąd przy przetwarzaniu trendu: {}", trendKeyword);
@@ -112,9 +117,14 @@ public class ScrapperService {
             int repetedTweetCount = 0;
 
             while (true) {
-                waitRandom();
+                waitRandom(driver, 2, 10);
                 driver.executeScript(ENDLESS_SCROLL_SCRIPT);
-                waitRandom();
+                waitRandom(driver, 2, 10);
+
+                if (tweetService.checkForErrorAndStop(driver)) {
+                    log.info("Zatrzymuję działanie z powodu blokady.");
+                    break;
+                }
 
                 List<WebElement> tweetsElements = waitForElements(driver, By.xpath("//article[@data-testid='tweet']"));
                 log.info("Zebrano tweetów: {}", tweetCount);
@@ -143,7 +153,7 @@ public class ScrapperService {
                         tweetCount = 0;
                         refreshPage(driver);
                     }
-                    waitRandom();
+                    waitRandom(driver, 2, 10);
                 }
                 log.info("Nie znaleziono tweetow przy scrollu");
             }
@@ -157,6 +167,6 @@ public class ScrapperService {
     private void refreshPage(ChromeDriver driver) {
         log.info("Odświeżam stronę...");
         driver.navigate().refresh();
-        waitRandom();
+        waitRandom(driver, 2, 10);
     }
 }

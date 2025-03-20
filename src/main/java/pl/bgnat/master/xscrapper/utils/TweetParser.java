@@ -3,6 +3,7 @@ package pl.bgnat.master.xscrapper.utils;
 import lombok.extern.slf4j.Slf4j;
 import org.openqa.selenium.By;
 import org.openqa.selenium.NoSuchElementException;
+import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.springframework.util.StringUtils;
 
@@ -10,8 +11,11 @@ import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import static pl.bgnat.master.xscrapper.utils.WaitUtils.waitForElements;
 
 @Slf4j
 public class TweetParser {
