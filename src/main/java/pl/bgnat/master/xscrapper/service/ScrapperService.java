@@ -16,6 +16,9 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import static pl.bgnat.master.xscrapper.utils.WaitUtils.waitForElements;
 import static pl.bgnat.master.xscrapper.utils.WaitUtils.waitRandom;
@@ -43,48 +46,64 @@ public class ScrapperService {
     //    @Scheduled(fixedRate = 3600000)
     @PostConstruct
     public void scheduledScrapeTrending() {
-        //Tworzymy główną instancję sterownika i logujemy się –sesja jest utrzymywana
         ChromeDriver trendingDriver = driverProvider.getObject();
 
         loginService.loginToAccount(trendingDriver);
         waitRandom();
         trendingDriver.get("https://x.com/explore/tabs/trending");
         waitRandom();
-        // Pobieramy elementy trendów – selektor odpowiada divowi z atrybutami data-testid='trend' i role='link'
+
         List<WebElement> trendCells = waitForElements(trendingDriver,
                 By.xpath(".//div[@data-testid='trend' and @role='link']"));
 
-        int trendsToProcess = Math.min(5, trendCells.size());
-        for (int i = 0; i < 3; i++) {
+        ExecutorService executor = Executors.newFixedThreadPool(10);
+
+        for (int i = 0; i < 10; i++) {
             WebElement cell = trendCells.get(i);
             try {
                 WebElement innerDiv = cell.findElement(By.xpath("./div"));
                 WebElement trendTextElement = innerDiv.findElement(By.xpath("./div[2]//span"));
                 String trendKeyword = trendTextElement.getText();
-                if (StringUtils.hasLength(trendKeyword)) {
-                    // Tworzymy nową instancję sterownika – zamiast logowania, kopiujemy sesję (cookies)
-                    ChromeDriver localDriver = driverProvider.getObject();
-                    try {
-                        // Skopiuj ciasteczka (sesję) z trendingDriver do localDriver
-                        loginService.copyCookies(trendingDriver, localDriver);
 
-                        // Tworzymy adres wyszukiwania z nazwą trendu
-                        String searchUrl = "https://x.com/search?q=" +
-                                URLEncoder.encode(trendKeyword, StandardCharsets.UTF_8);
-                        localDriver.get(searchUrl);
-                        waitRandom();
-                        // Scrapujemy tweety na stronie wyszukiwania
-                        scrapeTweets(localDriver);
-                    } catch (Exception e) {
-                        log.error("Błąd przy przetwarzaniu trendu: {}", trendKeyword, e);
-                    } finally {
-                        localDriver.quit();
-                    }
+                if (StringUtils.hasLength(trendKeyword)) {
+                    int finalI = i;
+                    executor.submit(() -> {
+                        ChromeDriver localDriver = driverProvider.getObject();
+                        try {
+                            loginService.copyCookies(trendingDriver, localDriver);
+
+                            String searchUrl = "https://x.com/search?q=" + URLEncoder.encode(trendKeyword, StandardCharsets.UTF_8);
+                            log.info("Otwieram {} trendujacy tag: {}, link: {}", finalI+1, trendKeyword, searchUrl);
+                            localDriver.get(searchUrl);
+
+                            waitRandom();
+                            scrapeTweets(localDriver);
+                        } catch (Exception e) {
+                            log.error("Błąd przy przetwarzaniu trendu: {}", trendKeyword);
+                        } finally {
+                            log.info("Zamykam {} trendujacy tag: ", finalI + 1, trendKeyword);
+                            localDriver.quit();
+                        }
+                    });
                 }
             } catch (NoSuchElementException e) {
                 log.warn("Nie znaleziono elementu trend w elemencie cellInnerDiv", e);
             }
         }
+
+        log.info("Zamykam executor");
+        executor.shutdown();
+        try {
+            if (!executor.awaitTermination(30, TimeUnit.MINUTES)) {
+                executor.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            executor.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
+
+        log.info("Zamykam trendingDriver");
+        trendingDriver.quit();
     }
 
     public void scrapeTweets(ChromeDriver driver) {
@@ -95,6 +114,7 @@ public class ScrapperService {
             while (true) {
                 waitRandom();
                 driver.executeScript(ENDLESS_SCROLL_SCRIPT);
+                waitRandom();
 
                 List<WebElement> tweetsElements = waitForElements(driver, By.xpath("//article[@data-testid='tweet']"));
                 log.info("Zebrano tweetów: {}", tweetCount);
@@ -107,8 +127,8 @@ public class ScrapperService {
                                 tweetsList.add(tweet);
                                 log.info("Dodano tweeta do listy.");
                             } else {
-                                log.warn("Ponownie ten sam tweet");
                                 repetedTweetCount++;
+                                log.warn("Ponownie ten sam tweet");
                             }
                             tweetCount++;
                         }
@@ -125,12 +145,12 @@ public class ScrapperService {
                     }
                     waitRandom();
                 }
-                log.info("Nie znaleziono żadnych tweetów");
+                log.info("Nie znaleziono tweetow przy scrollu");
             }
-            log.info("Kończę endless scroll w scrapeTweets()");
+            log.info("Kończę petle endless scroll");
         } catch (NoSuchElementException | NullPointerException e) {
             refreshPage(driver);
-            log.info("Nie udało się znaleźć elementów w elemencie tweeta");
+            log.warn("RefreshPage - wystapil blad");
         }
     }
 
