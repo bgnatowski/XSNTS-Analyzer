@@ -8,7 +8,6 @@ import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import pl.bgnat.master.xscrapper.model.Tweet;
@@ -17,9 +16,6 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 import static pl.bgnat.master.xscrapper.utils.WaitUtils.waitForElements;
 import static pl.bgnat.master.xscrapper.utils.WaitUtils.waitRandom;
@@ -97,11 +93,11 @@ public class ScrapperService {
             int repetedTweetCount = 0;
 
             while (true) {
-                driver.executeScript(ENDLESS_SCROLL_SCRIPT);
                 waitRandom();
+                driver.executeScript(ENDLESS_SCROLL_SCRIPT);
 
                 List<WebElement> tweetsElements = waitForElements(driver, By.xpath("//article[@data-testid='tweet']"));
-
+                log.info("Zebrano tweetów: {}", tweetCount);
                 if (!tweetsElements.isEmpty()) {
                     List<Tweet> tweetsList = new ArrayList<>();
                     for (WebElement tweetElement : tweetsElements) {
@@ -109,6 +105,7 @@ public class ScrapperService {
                         if (StringUtils.hasLength(tweet.getLink())) {
                             if (!tweetService.isExists(tweet)) {
                                 tweetsList.add(tweet);
+                                log.info("Dodano tweeta do listy.");
                             } else {
                                 log.warn("Ponownie ten sam tweet");
                                 repetedTweetCount++;
@@ -126,6 +123,7 @@ public class ScrapperService {
                         tweetCount = 0;
                         refreshPage(driver);
                     }
+                    waitRandom();
                 }
                 log.info("Nie znaleziono żadnych tweetów");
             }
