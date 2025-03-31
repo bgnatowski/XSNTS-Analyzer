@@ -3,7 +3,6 @@ package pl.bgnat.master.xscrapper.utils;
 import lombok.extern.slf4j.Slf4j;
 import org.openqa.selenium.By;
 import org.openqa.selenium.NoSuchElementException;
-import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.springframework.util.StringUtils;
 
@@ -11,11 +10,8 @@ import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import static pl.bgnat.master.xscrapper.utils.WaitUtils.waitForElements;
 
 @Slf4j
 public class TweetParser {
@@ -26,7 +22,6 @@ public class TweetParser {
 
             return handleSpan.getText();
         } catch (NoSuchElementException e) {
-            log.warn("Nie znaleziono user handle (span z @). Być może inny format/rekalama.");
             return null;
         }
     }
@@ -36,7 +31,6 @@ public class TweetParser {
             WebElement contentEl = tweetElement.findElement(By.xpath(".//div[@data-testid='tweetText']"));
             return contentEl.getText();
         } catch (NoSuchElementException e) {
-            log.warn("Nie znaleziono contentu: {}", tweetElement);
             return null;
         }
     }
@@ -56,7 +50,6 @@ public class TweetParser {
             }
             return rawHref;
         } catch (NoSuchElementException e) {
-            log.warn("Nie znaleziono linku: {}", tweetElement);
             return null;
         }
     }
@@ -76,7 +69,6 @@ public class TweetParser {
             ZonedDateTime zdt = ZonedDateTime.parse(dateTimeStr, DateTimeFormatter.ISO_DATE_TIME);
             return zdt.toLocalDateTime();
         } catch (NoSuchElementException e) {
-            log.warn("Nie znaleziono daty: {}", tweetElement);
             return null;
         } catch (DateTimeParseException e) {
             log.warn("Inny format daty: {}", dateTimeStr);
@@ -95,7 +87,6 @@ public class TweetParser {
 
             return parseExactNumberFromAriaLabel(ariaLabel);
         } catch (NoSuchElementException e) {
-            log.warn("Nie znaleziono: {}. Element: {}", dataTestId, tweetElement);
             return 0L;
         }
     }

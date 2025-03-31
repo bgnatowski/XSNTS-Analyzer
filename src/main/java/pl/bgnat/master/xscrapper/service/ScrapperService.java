@@ -3,25 +3,24 @@ package pl.bgnat.master.xscrapper.service;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.openqa.selenium.By;
-import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import pl.bgnat.master.xscrapper.model.Tweet;
+import pl.bgnat.master.xscrapper.pages.LoginPage;
+import pl.bgnat.master.xscrapper.pages.TrendingPage;
+import pl.bgnat.master.xscrapper.pages.TweetPage;
+import pl.bgnat.master.xscrapper.utils.WaitUtils;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.Set;
+import java.util.stream.Collectors;
 
-import static pl.bgnat.master.xscrapper.utils.WaitUtils.waitForElements;
 import static pl.bgnat.master.xscrapper.utils.WaitUtils.waitRandom;
 
 @Service
@@ -29,93 +28,136 @@ import static pl.bgnat.master.xscrapper.utils.WaitUtils.waitRandom;
 @Slf4j
 public class ScrapperService {
     private static final int MAX_TWEETS = 300;
-    public static final String ENDLESS_SCROLL_SCRIPT = "window.scrollTo(0,document.body.scrollHeight)";
-    private final LoginService loginService;
     private final TweetService tweetService;
     private final ObjectProvider<ChromeDriver> driverProvider;
 
-    @Scheduled(cron = "0 */2 * * * *")
+    @Value("${x.username}")
+    private String username;
+    @Value("${x.email}")
+    private String email;
+    @Value("${x.password}")
+    private String password;
+
+//    @Scheduled(cron = "0 */2 * * * *")
+//    @PostConstruct
     public void scheduledScrapeForYou() {
         ChromeDriver forYouDriver = driverProvider.getObject();
-        loginService.loginToAccount(forYouDriver);
-        scrapeTweets(forYouDriver);
-        forYouDriver.quit();
+        try {
+            LoginPage loginPage = new LoginPage(forYouDriver);
+            loginPage.loginIfNeeded(username, email, password);
+            TweetPage tweetPage = new TweetPage(forYouDriver);
+            scrapeTweets(tweetPage);
+        } finally {
+            forYouDriver.quit();
+        }
     }
 
-    @Scheduled(cron = "0 */3 * * * *")
+//    @Scheduled(cron = "0 */3 * * * *")
+    @PostConstruct
     public void scheduledScrapeTrendingNormal(){
         scheduledScrapeTrending(false);
     }
 
-    @Scheduled(cron = "0 0 * * * *")
+//    @Scheduled(cron = "0 0 * * * *")
     public void scheduledScrapeTrendingNewest(){
         scheduledScrapeTrending(true);
     }
 
-    public void scheduledScrapeTrending(boolean isNewest) {
+    private void scheduledScrapeTrending(boolean isNewest) {
         ChromeDriver trendingDriver = driverProvider.getObject();
 
         String newest = isNewest ? "&f=live" : "";
 
-        loginService.loginToAccount(trendingDriver);
-        waitRandom(trendingDriver, 2, 10);
-        trendingDriver.get("https://x.com/explore/tabs/trending");
-        waitRandom(trendingDriver, 1, 5);
+        LoginPage loginPage = new LoginPage(trendingDriver);
+        loginPage.loginIfNeeded(username, email, password);
 
-        List<WebElement> trendCells = waitForElements(trendingDriver,
-                By.xpath(".//div[@data-testid='trend' and @role='link']"));
+        waitRandom();
+        TrendingPage trendingPage = new TrendingPage(trendingDriver);
+        trendingPage.openTrending();
 
-        for (int i = 0; i < 10; i++) {
-            WebElement cell = trendCells.get(i);
-            try {
-                WebElement innerDiv = cell.findElement(By.xpath("./div"));
-                WebElement trendTextElement = innerDiv.findElement(By.xpath("./div[2]//span"));
-                String trendKeyword = trendTextElement.getText();
+        long lastHeight = 0L;
+        String collectedTrends;
 
-                if (StringUtils.hasLength(trendKeyword)) {
-                    int finalI = i;
-                        ChromeDriver localDriver = driverProvider.getObject();
-                        try {
-                            loginService.copyCookies(trendingDriver, localDriver);
+        Set<String> trendsKeywordsSet = new LinkedHashSet<>();
+        while (true){
+            log.info("Pobieram trendy (widoczne)");
+            List<WebElement> trendElements = trendingPage.getTrendElements();
+            log.info("Pobrano: {}", trendElements.size());
 
-                            String searchUrl = "https://x.com/search?q=" + URLEncoder.encode(trendKeyword, StandardCharsets.UTF_8);
-                            log.info("Otwieram {} trendujacy tag: {}, link: {}", finalI+1, trendKeyword, searchUrl+newest);
-                            localDriver.get(searchUrl+newest);
+            trendElements.forEach(webElement -> {
+                String keywordNr = trendingPage.extractTrending(webElement);
+//                log.info(keywordNr);
+                trendsKeywordsSet.add(keywordNr);
+            });
 
-                            waitRandom(localDriver, 2, 10);
-                            scrapeTweets(localDriver);
-                        } catch (Exception e) {
-                            log.error("Błąd przy przetwarzaniu trendu: {}", trendKeyword);
-                        } finally {
-                            log.info("Zamykam {} trendujacy tag: ", finalI + 1, trendKeyword);
-                            localDriver.quit();
-                        }
-                }
-            } catch (NoSuchElementException e) {
-                log.warn("Nie znaleziono elementu trend w elemencie cellInnerDiv", e);
+            waitRandom();
+            log.info("Scrolluje");
+            long newHeight = trendingPage.scrollBy1000();
+
+            if(newHeight == lastHeight && trendsKeywordsSet.size() == 30){
+                collectedTrends = String.join(" ", trendsKeywordsSet);
+                log.info("30 aktualnych trendow: {}", collectedTrends);
+                break;
+            } else {
+                log.info("Ponawiam pętle");
+                lastHeight = newHeight;
             }
         }
+
+        List<String> keywords = trendingPage.extractTrendKeyword(trendsKeywordsSet);
+        keywords.forEach(System.out::println);
+
+//        for (int i = 0; i < 10; i++) {
+//            WebElement cell = trendCells.get(i);
+//            try {
+//                WebElement innerDiv = cell.findElement(By.xpath("./div"));
+//                WebElement trendTextElement = innerDiv.findElement(By.xpath("./div[2]//span"));
+//                String trendKeyword = trendTextElement.getText();
+//
+//                if (StringUtils.hasLength(trendKeyword)) {
+//                    int finalI = i;
+//                        ChromeDriver localDriver = driverProvider.getObject();
+//                        try {
+//                            loginService.copyCookies(trendingDriver, localDriver);
+//
+//                            String searchUrl = "https://x.com/search?q=" + URLEncoder.encode(trendKeyword, StandardCharsets.UTF_8);
+//                            log.info("Otwieram {} trendujacy tag: {}, link: {}", finalI+1, trendKeyword, searchUrl+newest);
+//                            localDriver.get(searchUrl+newest);
+//
+//                            waitRandom();
+//                            scrapeTweets(localDriver);
+//                        } catch (Exception e) {
+//                            log.error("Błąd przy przetwarzaniu trendu: {}", trendKeyword);
+//                        } finally {
+//                            log.info("Zamykam {} trendujacy tag: ", finalI + 1, trendKeyword);
+//                            localDriver.quit();
+//                        }
+//                }
+//            } catch (NoSuchElementException e) {
+//                log.warn("Nie znaleziono elementu trend w elemencie cellInnerDiv", e);
+//            }
+//        }
 
         log.info("Zamykam trendingDriver");
         trendingDriver.quit();
     }
 
-    public void scrapeTweets(ChromeDriver driver) {
+    private void scrapeTweets(TweetPage tweetPage) {
         try {
             int tweetCount = 0;
-            int repetedTweetCount = 0;
-
+            int repeatedTweetCount = 0;
             while (true) {
-                waitRandom(driver, 2, 10);
-                driver.executeScript(ENDLESS_SCROLL_SCRIPT);
-                waitRandom(driver, 2, 10);
-
-                if (tweetService.checkForErrorAndStop(driver)) {
-                    log.info("Zatrzymuję działanie z powodu blokady.");
+                log.info("Powtorzonych tweetow: {}", repeatedTweetCount);
+                WaitUtils.waitRandom();
+                if (tweetPage.checkForErrorAndStop()) {
                     break;
                 }
 
-                List<WebElement> tweetsElements = waitForElements(driver, By.xpath("//article[@data-testid='tweet']"));
+                log.info("Scrolluje do konca strony");
+                tweetPage.scrollToBottom();
+                WaitUtils.waitRandom();
+
+                List<WebElement> tweetsElements = tweetPage.getTweetElements();
                 log.info("Zebrano tweetów: {}", tweetCount);
                 if (!tweetsElements.isEmpty()) {
                     List<Tweet> tweetsList = new ArrayList<>();
@@ -124,37 +166,30 @@ public class ScrapperService {
                         if (StringUtils.hasLength(tweet.getLink())) {
                             if (!tweetService.isExists(tweet)) {
                                 tweetsList.add(tweet);
-                                log.info("Dodano tweeta do listy.");
                             } else {
-                                repetedTweetCount++;
+                                repeatedTweetCount++;
                                 log.warn("Ponownie ten sam tweet");
                             }
                             tweetCount++;
                         }
                     }
-
                     tweetService.saveTweets(tweetsList);
-
-                    if (repetedTweetCount >= 50)
-                        break;
-
+                    log.info("Zapisano w podejscu: {}, Ilosc tweetCount: {}", tweetsList.size(), tweetCount);
+                    if (repeatedTweetCount >= 50) break;
                     if (tweetCount >= MAX_TWEETS) {
+                        log.info("Osiaganieto limit tweetow. tweetCount: {}", tweetCount);
                         tweetCount = 0;
-                        refreshPage(driver);
+                        tweetPage.refreshPage();
                     }
-                    waitRandom(driver, 2, 10);
+                } else {
+                    log.info("Nie znaleziono tweetów przy scrollowaniu");
                 }
-                log.info("Nie znaleziono tweetow przy scrollu");
             }
-            log.info("Kończę petle endless scroll");
-        } catch (NoSuchElementException | NullPointerException e) {
-            log.warn("RefreshPage - wystapil blad");
+            log.info("Kończę pętlę endless scroll");
+        } catch (Exception e) {
+            tweetPage.refreshPage();
+            log.warn("Wystąpił błąd przy scrapowaniu tweetów; odświeżam stronę.");
+            log.error(e.getMessage());
         }
-    }
-
-    private void refreshPage(ChromeDriver driver) {
-        log.info("Odświeżam stronę...");
-        driver.navigate().refresh();
-        waitRandom(driver, 2, 10);
     }
 }

@@ -11,6 +11,8 @@ import org.springframework.context.annotation.Primary;
 
 @Configuration
 public class GlobalConfig {
+    public final static ObjectMapper objectMapper = new ObjectMapper();
+
     @Bean
     @Primary
     public ObjectMapper objectMapper() {

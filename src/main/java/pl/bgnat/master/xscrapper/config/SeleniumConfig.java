@@ -14,6 +14,7 @@ public class SeleniumConfig {
     public ChromeDriver driver() {
         ChromeOptions options = new ChromeOptions();
 //        options.addArguments("--headless");
+        options.addArguments("disable_infobars");
         return new ChromeDriver(options);
     }
 }

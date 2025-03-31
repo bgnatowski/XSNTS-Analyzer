@@ -2,8 +2,6 @@ package pl.bgnat.master.xscrapper.service;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.openqa.selenium.By;
-import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -17,7 +15,6 @@ import java.util.List;
 
 import static org.springframework.util.StringUtils.hasLength;
 import static pl.bgnat.master.xscrapper.utils.TweetParser.*;
-import static pl.bgnat.master.xscrapper.utils.WaitUtils.waitForElements;
 
 @Service
 @Slf4j
@@ -26,7 +23,7 @@ public class TweetService {
     private final TweetRepository tweetRepository;
 
     public Tweet parseTweet(WebElement tweetElement) {
-        log.info("Start parseTweet");
+//        log.info("Start parseTweet");
         Tweet tweet = new Tweet();
 
         String username = parseUsername(tweetElement);
@@ -55,7 +52,7 @@ public class TweetService {
         tweet.setCreationDate(now);
         tweet.setUpdateDate(now);
 
-        log.info("Parsed tweet: {}", tweet);
+//        log.info("Parsed tweet: {}", tweet);
         return tweet;
     }
 
@@ -85,26 +82,6 @@ public class TweetService {
     }
 
     public void saveTweets(List<Tweet> tweetsList) {
-        log.info("Saving {} tweets", tweetsList.size());
         tweetRepository.saveAllAndFlush(tweetsList);
-    }
-
-    public boolean checkForErrorAndStop(WebDriver driver) {
-        try {
-            // XPath, który znajduje element <span> z tekstem "Something went wrong. Try reloading."
-            By errorLocator = By.xpath("//span[contains(text(), 'Something went wrong. Try reloading.')]");
-
-            // Czekamy na element za pomocą waitForElements
-            List<WebElement> errorElements = waitForElements(driver, errorLocator);
-
-            if (!errorElements.isEmpty()) {
-                // Jeśli element został znaleziony, logujemy informację i przerywamy działanie
-                log.warn("Wykryto błąd: 'Something went wrong. Try reloading.'");
-                return true; // Możesz także rzucić wyjątek, jeśli chcesz natychmiast zatrzymać działanie
-            }
-        } catch (Exception e) {
-            log.error("Wystąpił błąd podczas sprawdzania błędu na stronie.", e);
-        }
-        return false; // Brak błędu - kontynuuj działanie
     }
 }
