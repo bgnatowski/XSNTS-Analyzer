@@ -8,6 +8,7 @@ import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import pl.bgnat.master.xscrapper.model.Tweet;
@@ -27,14 +28,13 @@ import static pl.bgnat.master.xscrapper.utils.WaitUtils.waitRandom;
 @RequiredArgsConstructor
 @Slf4j
 public class ScrapperService {
-    private static final int MAX_TWEETS = 50;
+    private static final int MAX_TWEETS = 300;
     public static final String ENDLESS_SCROLL_SCRIPT = "window.scrollTo(0,document.body.scrollHeight)";
     private final LoginService loginService;
     private final TweetService tweetService;
     private final ObjectProvider<ChromeDriver> driverProvider;
 
-    //    @Scheduled(fixedRate = 3600000)
-//    @PostConstruct
+    @Scheduled(cron = "0 */2 * * * *")
     public void scheduledScrapeForYou() {
         ChromeDriver forYouDriver = driverProvider.getObject();
         loginService.loginToAccount(forYouDriver);
@@ -42,12 +42,16 @@ public class ScrapperService {
         forYouDriver.quit();
     }
 
-    @PostConstruct()
-    public void scheduledScrapeTrending(){
+    @Scheduled(cron = "0 */3 * * * *")
+    public void scheduledScrapeTrendingNormal(){
+        scheduledScrapeTrending(false);
+    }
+
+    @Scheduled(cron = "0 0 * * * *")
+    public void scheduledScrapeTrendingNewest(){
         scheduledScrapeTrending(true);
     }
 
-    //    @Scheduled(fixedRate = 3600000)
     public void scheduledScrapeTrending(boolean isNewest) {
         ChromeDriver trendingDriver = driverProvider.getObject();
 
@@ -61,8 +65,6 @@ public class ScrapperService {
         List<WebElement> trendCells = waitForElements(trendingDriver,
                 By.xpath(".//div[@data-testid='trend' and @role='link']"));
 
-        ExecutorService executor = Executors.newFixedThreadPool(5);
-
         for (int i = 0; i < 10; i++) {
             WebElement cell = trendCells.get(i);
             try {
@@ -72,7 +74,6 @@ public class ScrapperService {
 
                 if (StringUtils.hasLength(trendKeyword)) {
                     int finalI = i;
-                    executor.submit(() -> {
                         ChromeDriver localDriver = driverProvider.getObject();
                         try {
                             loginService.copyCookies(trendingDriver, localDriver);
@@ -89,22 +90,10 @@ public class ScrapperService {
                             log.info("Zamykam {} trendujacy tag: ", finalI + 1, trendKeyword);
                             localDriver.quit();
                         }
-                    });
                 }
             } catch (NoSuchElementException e) {
                 log.warn("Nie znaleziono elementu trend w elemencie cellInnerDiv", e);
             }
-        }
-
-        log.info("Zamykam executor");
-        executor.shutdown();
-        try {
-            if (!executor.awaitTermination(30, TimeUnit.MINUTES)) {
-                executor.shutdownNow();
-            }
-        } catch (InterruptedException e) {
-            executor.shutdownNow();
-            Thread.currentThread().interrupt();
         }
 
         log.info("Zamykam trendingDriver");
@@ -159,7 +148,6 @@ public class ScrapperService {
             }
             log.info("Kończę petle endless scroll");
         } catch (NoSuchElementException | NullPointerException e) {
-            refreshPage(driver);
             log.warn("RefreshPage - wystapil blad");
         }
     }

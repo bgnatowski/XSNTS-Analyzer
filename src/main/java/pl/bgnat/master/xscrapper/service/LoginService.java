@@ -56,13 +56,10 @@ public class LoginService {
 
     private void acceptCookies(ChromeDriver driver) {
         try {
-            log.info("Before accepting cookies");
             By acceptCookiesButtonLocator = By.xpath("//span[text()='Accept all cookies']");
 
             WebElement acceptCookiesButton = waitForElement(driver, acceptCookiesButtonLocator);
             acceptCookiesButton.click();
-            log.info("After click 'Accept all cookies");
-
         } catch (TimeoutException | NoSuchElementException e) {
             log.info("Nie znaleziono przycisku 'Accept all cookies' w zadanym czasie. Być może już zaakceptowano lub nie pojawił się. Error message: {}", e.getMessage());
         } catch (Exception e) {
@@ -75,34 +72,27 @@ public class LoginService {
             driver.get(BASE_URL);
             WebElement firstTweet = waitForElement(driver, By.xpath("//article[@data-testid='tweet']"));
             if (firstTweet != null) {
-                log.info("Znaleziono element tweet w /home – prawdopodobnie jesteśmy zalogowani.");
+                log.info("Jesteśmy zalogowani.");
                 return true;
             }
         } catch (TimeoutException e) {
-            log.info("Nie znaleziono tweetów w /home. Prawdopodobnie nie zalogowany.");
+            log.info("Prawdopodobnie nie zalogowany.");
         }
         return false;
     }
 
     private void login(ChromeDriver driver) {
         try {
-            log.info("Before loginButton");
             WebElement loginButton = waitForElement(driver, By.xpath("//a[@data-testid='loginButton']"));
             loginButton.click();
-            log.info("After loginButton");
 
-            log.info("Before usernameInput");
             waitRandom();
             WebElement usernameInput = waitForElement(driver, By.xpath("//input[@name='text']"));
             usernameInput.sendKeys(username);
-            log.info("After usernameInput");
 
-            log.info("Before nextButton");
             WebElement nextButton= waitForElement(driver, By.xpath("//span[text()='Dalej']"));
             nextButton.click();
-            log.info("After nextButton");
 
-            log.info("Before emailInput");
             waitRandom();
             try {
                 WebElement mailInput = waitForElement(driver, By.xpath("//input[@data-testid='ocfEnterTextTextInput']"));
@@ -113,17 +103,12 @@ public class LoginService {
             } catch (TimeoutException e) {
                 log.info("Brak formularza nietypowej aktywnosci");
             }
-            log.info("After emailInput");
 
-            log.info("Before passwordInput");
             WebElement passwordInput = waitForElement(driver, By.xpath("//input[@name='password']"));
             passwordInput.sendKeys(password);
-            log.info("After passwordInput");
 
-            log.info("Before loginFormButton");
             WebElement loginFormButton = waitForElement(driver, By.xpath("//button[@data-testid='LoginForm_Login_Button']"));
             loginFormButton.click();
-            log.info("After loginFormButton");
 
             waitRandom();
             Set<Cookie> cookies = driver.manage().getCookies();
