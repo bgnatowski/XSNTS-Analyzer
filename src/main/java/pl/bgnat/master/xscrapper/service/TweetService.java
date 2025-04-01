@@ -11,6 +11,7 @@ import pl.bgnat.master.xscrapper.model.Tweet;
 import pl.bgnat.master.xscrapper.repository.TweetRepository;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.springframework.util.StringUtils.hasLength;
@@ -22,7 +23,23 @@ import static pl.bgnat.master.xscrapper.utils.TweetParser.*;
 public class TweetService {
     private final TweetRepository tweetRepository;
 
-    public Tweet parseTweet(WebElement tweetElement) {
+    public void saveTweets(List<WebElement> scrappedTweetsElements) {
+        List<Tweet> tweetsList = new ArrayList<>();
+        for (WebElement tweetElement : scrappedTweetsElements) {
+            Tweet tweet = parseTweet(tweetElement);
+            if (StringUtils.hasLength(tweet.getLink())) {
+                if (!isExists(tweet)) {
+                    tweetsList.add(tweet);
+                } else {
+                    log.warn("Ponownie ten sam tweet");
+                }
+            }
+        }
+        tweetRepository.saveAllAndFlush(tweetsList);
+        log.info("Zapisano: {} tweetow do bazy", tweetsList.size());
+    }
+
+    private Tweet parseTweet(WebElement tweetElement) {
 //        log.info("Start parseTweet");
         Tweet tweet = new Tweet();
 
@@ -56,7 +73,7 @@ public class TweetService {
         return tweet;
     }
 
-    public TweetDto saveTweet(Tweet tweet){
+    private TweetDto saveTweet(Tweet tweet){
         log.info("Start saveTweet");
         if(!StringUtils.hasLength(tweet.getLink()))
             return null;
@@ -65,12 +82,12 @@ public class TweetService {
         return TweetMapper.INSTANCE.toDto(saved);
     }
 
-    public boolean isExists(Tweet tweetObj) {
+    private boolean isExists(Tweet tweetObj) {
         String link = tweetObj.getLink();
         return tweetRepository.existsTweetByLink(link);
     }
 
-    public void updateTweet(Tweet tweetObj) {
+    private void updateTweet(Tweet tweetObj) {
         String link = tweetObj.getLink();
         Tweet existingTweet = tweetRepository.findByLink(link);
         existingTweet.setContent(tweetObj.getContent());
@@ -79,9 +96,5 @@ public class TweetService {
         existingTweet.setCommentCount(tweetObj.getCommentCount());
         existingTweet.setUpdateDate(LocalDateTime.now());
         tweetRepository.save(tweetObj);
-    }
-
-    public void saveTweets(List<Tweet> tweetsList) {
-        tweetRepository.saveAllAndFlush(tweetsList);
     }
 }
