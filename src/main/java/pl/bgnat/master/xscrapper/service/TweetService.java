@@ -13,6 +13,7 @@ import pl.bgnat.master.xscrapper.repository.TweetRepository;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import static org.springframework.util.StringUtils.hasLength;
 import static pl.bgnat.master.xscrapper.utils.TweetParser.*;
@@ -23,7 +24,7 @@ import static pl.bgnat.master.xscrapper.utils.TweetParser.*;
 public class TweetService {
     private final TweetRepository tweetRepository;
 
-    public void saveTweets(List<WebElement> scrappedTweetsElements) {
+    public void saveTweets(Set<WebElement> scrappedTweetsElements) {
         List<Tweet> tweetsList = new ArrayList<>();
         for (WebElement tweetElement : scrappedTweetsElements) {
             Tweet tweet = parseTweet(tweetElement);

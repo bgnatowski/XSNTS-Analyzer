@@ -1,5 +1,6 @@
 package pl.bgnat.master.xscrapper.service;
 
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.openqa.selenium.WebElement;
@@ -13,6 +14,7 @@ import pl.bgnat.master.xscrapper.pages.TrendingPage;
 import pl.bgnat.master.xscrapper.pages.WallPage;
 
 import java.util.List;
+import java.util.Set;
 
 import static pl.bgnat.master.xscrapper.utils.WaitUtils.waitRandom;
 
@@ -32,13 +34,18 @@ public class ScrapperService {
     private String password;
 
     //    @Scheduled(cron = "0 0 */2 * * * ")
+    @PostConstruct
     public void scheduledScrapeForYouWall() {
         ChromeDriver forYouDriver = driverProvider.getObject();
+
         LoginPage loginPage = new LoginPage(forYouDriver);
         loginPage.loginIfNeeded(username, email, password);
+
         WallPage wallPage = new WallPage(forYouDriver);
-        List<WebElement> scrappedTweets = wallPage.scrapeTweets();
-        forYouDriver.quit();//?
+        wallPage.openForYou();
+
+        Set<WebElement> scrappedTweets = wallPage.scrapeTweets();
+        forYouDriver.quit(); //?
 
         tweetService.saveTweets(scrappedTweets);
 //        forYouDriver.quit(); // czy tu?

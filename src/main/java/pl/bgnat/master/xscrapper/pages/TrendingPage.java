@@ -13,7 +13,7 @@ import static pl.bgnat.master.xscrapper.utils.WaitUtils.waitRandom;
 
 @Slf4j
 public class TrendingPage extends BasePage {
-    private static final String TRENDING_SUB_URL = "explore/tabs/trending";
+    private static final String TRENDING_SUB_URL = "/explore/tabs/trending";
 
     public TrendingPage(WebDriver driver) {
         super(driver);
@@ -37,7 +37,6 @@ public class TrendingPage extends BasePage {
             });
 
             waitRandom();
-            log.info("Scrolluje");
             long newHeight = scrollBy1000();
 
             if (newHeight == lastHeight && trendsKeywordsSet.size() == 30) {
