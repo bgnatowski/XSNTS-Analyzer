@@ -1,32 +1,69 @@
 package pl.bgnat.master.xscrapper.pages;
 
+import lombok.extern.slf4j.Slf4j;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
+import static pl.bgnat.master.xscrapper.utils.WaitUtils.waitRandom;
+
+@Slf4j
 public class TrendingPage extends BasePage {
-
-    public static final String TRENDING_SUB_URL = "explore/tabs/trending";
+    private static final String TRENDING_SUB_URL = "explore/tabs/trending";
 
     public TrendingPage(WebDriver driver) {
         super(driver);
     }
 
-    public void openTrending(){
+    public List<String> scrapeTrendingKeywords() {
+        openTrending();
+
+        long lastHeight = 0L;
+        String collectedTrends;
+
+        Set<String> trendsKeywordsSet = new LinkedHashSet<>();
+        while (true) {
+            log.info("Pobieram trendy...");
+            List<WebElement> trendElements = getTrendElements();
+            log.info("Pobrano: {} elementów", trendElements.size());
+
+            trendElements.forEach(webElement -> {
+                String keywordNr = extractTrending(webElement);
+                trendsKeywordsSet.add(keywordNr);
+            });
+
+            waitRandom();
+            log.info("Scrolluje");
+            long newHeight = scrollBy1000();
+
+            if (newHeight == lastHeight && trendsKeywordsSet.size() == 30) {
+                collectedTrends = String.join(" ", trendsKeywordsSet);
+                log.info("30 aktualnych trendow: {}", collectedTrends);
+                break;
+            } else {
+                log.info("Ponawiam pętle");
+                lastHeight = newHeight;
+            }
+        }
+
+        return extractTrendKeyword(trendsKeywordsSet);
+    }
+
+    private void openTrending() {
         openSubPage(TRENDING_SUB_URL);
     }
 
     // Pobiera elementy trendów – zakładamy, że selektor dotyczy divów z data-testid="trend" i role="link"
-    public List<WebElement> getTrendElements() {
+    private List<WebElement> getTrendElements() {
         return waitForElements(By.xpath(".//div[@data-testid='trend' and @role='link']"));
     }
 
     // Wyciąga tekst trendu – przyjmujemy, że interesujący nas tekst (np. nazwa) jest w drugim divie wewnątrz kontenera
-    public String extractTrending(WebElement trendElement) {
+    private String extractTrending(WebElement trendElement) {
         try {
             WebElement innerDiv = trendElement.findElement(By.xpath("./div"));
             WebElement nr = innerDiv.findElement(By.xpath("./div//span"));
@@ -38,7 +75,7 @@ public class TrendingPage extends BasePage {
         }
     }
 
-    public List<String> extractTrendKeyword(Set<String> trendsKeywords){
+    private List<String> extractTrendKeyword(Set<String> trendsKeywords) {
         // Wyodrębniamy tylko część po numeracji
         return trendsKeywords.stream()
                 .map(entry -> {
