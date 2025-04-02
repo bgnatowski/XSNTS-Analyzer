@@ -3,6 +3,7 @@ package pl.bgnat.master.xscrapper.service;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.springframework.beans.factory.ObjectProvider;
@@ -13,8 +14,10 @@ import pl.bgnat.master.xscrapper.model.Tweet;
 import pl.bgnat.master.xscrapper.pages.LoginPage;
 import pl.bgnat.master.xscrapper.pages.TrendingPage;
 import pl.bgnat.master.xscrapper.pages.WallPage;
+import pl.bgnat.master.xscrapper.utils.CookieUtils;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 import static pl.bgnat.master.xscrapper.utils.WaitUtils.waitRandom;
@@ -34,8 +37,7 @@ public class ScrapperService {
     @Value("${x.password}")
     private String password;
 
-    //    @Scheduled(cron = "0 0 */2 * * * ")
-    @PostConstruct
+//    @Scheduled(cron = "0 0 */2 * * * ")
     public void scheduledScrapeForYouWall() {
         ChromeDriver forYouDriver = driverProvider.getObject();
 
@@ -48,56 +50,58 @@ public class ScrapperService {
         Set<Tweet> scrappedTweets = wallPage.scrapeTweets();
 
         tweetService.saveTweets(scrappedTweets);
+        wallPage.exit(); // czy potrzebne
     }
 
-    //    @Scheduled(cron = "0 0 */3 *  * *")
-    public void scheduledScrapeTrendingWall() {
-        ChromeDriver loginDriver = driverProvider.getObject();
-        LoginPage loginPage = new LoginPage(loginDriver);
-        loginPage.loginIfNeeded(username, email, password);
+//    @Scheduled(cron = "0 0 */3 * * *")
+    @PostConstruct
+    public void scheduledScrapeTrendingKeywords() {
+        do {
+            ChromeDriver trendingDriver = driverProvider.getObject();
 
-//        for (String keyword : currentTrendingKeyword) {
-//            int trendNr = 1;
-//            try {
-//                ChromeDriver localDriver = driverProvider.getObject();
-//                try {
-//                    String searchUrl = "https://x.com/search?q=" + URLEncoder.encode(keyword, StandardCharsets.UTF_8);
-//                    CookieUtils.copyCookies(loginDriver, localDriver, searchUrl);
-//
-//                    log.info("Otwieram {} trendujacy tag: {}, link: {}", finalI + 1, trendKeyword, searchUrl + newest);
-//                    localDriver.get(searchUrl + newest);
-//
-//                    waitRandom();
-//                    scrapeTweets(localDriver);
-//                } catch (Exception e) {
-//                    log.error("Błąd przy przetwarzaniu trendu: {}", trendKeyword);
-//                } finally {
-//                    log.info("Zamykam {} trendujacy tag: ", finalI + 1, trendKeyword);
-//                    localDriver.quit();
-//                }
-//            } catch (NoSuchElementException e) {
-//                log.warn("Nie znaleziono elementu trend w elemencie cellInnerDiv", e);
-//            }
-//        }
-    }
+            LoginPage loginPage = new LoginPage(trendingDriver);
+            loginPage.loginIfNeeded(username, email, password);
 
-    //    @Scheduled(cron = "0 0 * * * *")
-    public void scheduledScrapeTrendingNewestWall() {
-//        String newest = isNewest ? "&f=live" : "";
-    }
+            waitRandom();
+            TrendingPage trendingPage = new TrendingPage(trendingDriver);
+            currentTrendingKeyword = trendingPage.scrapeTrendingKeywords();
+            trendingPage.exit();
 
-    @Scheduled(cron = "0 0 */3 * * *")
-    private void scheduledScrapeTrendingKeywords() {
-        ChromeDriver trendingDriver = driverProvider.getObject();
+            waitRandom();
+        } while (currentTrendingKeyword.isEmpty());
 
-        LoginPage loginPage = new LoginPage(trendingDriver);
-        loginPage.loginIfNeeded(username, email, password);
-
+        scrapeTrendingWall(WallPage.WallType.POPULAR);
         waitRandom();
-        TrendingPage trendingPage = new TrendingPage(trendingDriver);
-        currentTrendingKeyword = trendingPage.scrapeTrendingKeywords();
+        scrapeTrendingWall(WallPage.WallType.NEWEST);
+    }
 
-        waitRandom();
-        trendingDriver.quit();
+    private void scrapeTrendingWall(WallPage.WallType wallType) {
+        for (String keyword : currentTrendingKeyword) {
+            int trendNr = 1;
+            ChromeDriver trendDriver = driverProvider.getObject();
+            WallPage wallPage;
+            try {
+                LoginPage loginPage = new LoginPage(trendDriver);
+                loginPage.loginIfNeeded(username, email, password);
+
+                log.info("Otwieram {} trendujacy tag: {}", trendNr, keyword);
+                wallPage = new WallPage(trendDriver);
+
+                switch (wallType){
+                    case POPULAR -> wallPage.openPopular(keyword);
+                    case NEWEST -> wallPage.openNewest(keyword);
+                }
+
+                Set<Tweet> scrappedTweets = wallPage.scrapeTweets();
+
+                tweetService.saveTweets(scrappedTweets);
+                waitRandom();
+            } catch (Exception e) {
+                log.error("Błąd przy przetwarzaniu trendu: {}", keyword);
+            } finally {
+                log.info("Zamykam {} trendujacy tag: {}", trendNr, keyword);
+                trendNr++;
+            }
+        }
     }
 }

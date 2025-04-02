@@ -22,6 +22,11 @@ public abstract class BasePage {
         this.driver.manage().window().maximize();
     }
 
+    public void exit() {
+        driver.quit();
+        this.driver = null;
+    }
+
     protected void open() {
         driver.get(BASE_URL);
     }

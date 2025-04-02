@@ -22,6 +22,10 @@ import static pl.bgnat.master.xscrapper.utils.WaitUtils.*;
 public class WallPage extends BasePage {
     private static final int MAX_TWEETS_PER_SCRAPE = 1000;
 
+    public enum WallType {
+        FOR_YOU, POPULAR, NEWEST
+    }
+
     public WallPage(WebDriver driver) {
         super(driver);
         zoomOutAndReturn();

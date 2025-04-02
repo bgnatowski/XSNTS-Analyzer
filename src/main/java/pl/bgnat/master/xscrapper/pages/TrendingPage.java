@@ -17,6 +17,7 @@ public class TrendingPage extends BasePage {
 
     public TrendingPage(WebDriver driver) {
         super(driver);
+        zoomOutAndReturn();
     }
 
     public List<String> scrapeTrendingKeywords() {
@@ -27,7 +28,6 @@ public class TrendingPage extends BasePage {
 
         Set<String> trendsKeywordsSet = new LinkedHashSet<>();
         while (true) {
-            log.info("Pobieram trendy...");
             List<WebElement> trendElements = getTrendElements();
             log.info("Pobrano: {} elementów", trendElements.size());
 
@@ -36,19 +36,20 @@ public class TrendingPage extends BasePage {
                 trendsKeywordsSet.add(keywordNr);
             });
 
-            waitRandom();
-            long newHeight = scrollBy1000();
-
-            if (newHeight == lastHeight && trendsKeywordsSet.size() == 30) {
+            if(trendsKeywordsSet.size() >= 30){
                 collectedTrends = String.join(" ", trendsKeywordsSet);
                 log.info("30 aktualnych trendow: {}", collectedTrends);
                 break;
-            } else {
+            }
+
+            waitRandom();
+            long newHeight = scrollBy1000();
+
+            if (newHeight != lastHeight) {
                 log.info("Ponawiam pętle");
                 lastHeight = newHeight;
             }
         }
-
         return extractTrendKeyword(trendsKeywordsSet);
     }
 

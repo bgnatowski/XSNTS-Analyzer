@@ -21,7 +21,7 @@ public class CookieUtils {
 
     // Kopiuje ciasteczka z drivera źródłowego do docelowego, otwierając najpierw BASE_URL w driverze docelowym
     public static void copyCookies(WebDriver source, WebDriver destination, String baseUrl) {
-        destination.get(baseUrl);
+//        destination.get(baseUrl);
         Set<Cookie> cookies = source.manage().getCookies();
         for (Cookie cookie : cookies) {
             destination.manage().addCookie(cookie);
