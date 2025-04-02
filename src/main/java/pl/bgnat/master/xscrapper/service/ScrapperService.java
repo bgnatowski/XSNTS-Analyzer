@@ -9,6 +9,7 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import pl.bgnat.master.xscrapper.model.Tweet;
 import pl.bgnat.master.xscrapper.pages.LoginPage;
 import pl.bgnat.master.xscrapper.pages.TrendingPage;
 import pl.bgnat.master.xscrapper.pages.WallPage;
@@ -44,11 +45,9 @@ public class ScrapperService {
         WallPage wallPage = new WallPage(forYouDriver);
         wallPage.openForYou();
 
-        Set<WebElement> scrappedTweets = wallPage.scrapeTweets();
-        forYouDriver.quit(); //?
+        Set<Tweet> scrappedTweets = wallPage.scrapeTweets();
 
         tweetService.saveTweets(scrappedTweets);
-//        forYouDriver.quit(); // czy tu?
     }
 
     //    @Scheduled(cron = "0 0 */3 *  * *")

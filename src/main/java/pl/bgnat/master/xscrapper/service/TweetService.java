@@ -2,7 +2,6 @@ package pl.bgnat.master.xscrapper.service;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.openqa.selenium.WebElement;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import pl.bgnat.master.xscrapper.dto.TweetDto;
@@ -12,11 +11,9 @@ import pl.bgnat.master.xscrapper.repository.TweetRepository;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
-import static org.springframework.util.StringUtils.hasLength;
-import static pl.bgnat.master.xscrapper.utils.TweetParser.*;
 
 @Service
 @Slf4j
@@ -24,54 +21,22 @@ import static pl.bgnat.master.xscrapper.utils.TweetParser.*;
 public class TweetService {
     private final TweetRepository tweetRepository;
 
-    public void saveTweets(Set<WebElement> scrappedTweetsElements) {
-        List<Tweet> tweetsList = new ArrayList<>();
-        for (WebElement tweetElement : scrappedTweetsElements) {
-            Tweet tweet = parseTweet(tweetElement);
+    public void saveTweets(Set<Tweet> scrappedTweets) {
+        Set<Tweet> tweetsList = new HashSet<>();
+        int repeatCount = 0;
+        for (Tweet tweet : scrappedTweets) {
             if (StringUtils.hasLength(tweet.getLink())) {
                 if (!isExists(tweet)) {
                     tweetsList.add(tweet);
                 } else {
-                    log.warn("Ponownie ten sam tweet");
+                    repeatCount ++;
+                    log.warn("Tweet istnieje w bazie");
                 }
             }
         }
-        tweetRepository.saveAllAndFlush(tweetsList);
-        log.info("Zapisano: {} tweetow do bazy", tweetsList.size());
-    }
 
-    private Tweet parseTweet(WebElement tweetElement) {
-//        log.info("Start parseTweet");
-        Tweet tweet = new Tweet();
-
-        String username = parseUsername(tweetElement);
-        if(!hasLength(username)) { return tweet; }
-        tweet.setUsername(username);
-
-        String content = parseTweetContent(tweetElement);
-        tweet.setContent(content);
-
-        String postLink = parsePostLink(tweetElement);
-        tweet.setLink(postLink);
-
-        LocalDateTime postDate = parsePostDate(tweetElement);
-        tweet.setPostDate(postDate);
-
-        Long commentCount = parseCountFromAriaLabel(tweetElement, "reply");
-        tweet.setCommentCount(commentCount);
-
-        Long repostCount = parseCountFromAriaLabel(tweetElement, "retweet");
-        tweet.setRepostCount(repostCount);
-
-        Long likeCount = parseCountFromAriaLabel(tweetElement, "like");
-        tweet.setLikeCount(likeCount);
-
-        LocalDateTime now = LocalDateTime.now();
-        tweet.setCreationDate(now);
-        tweet.setUpdateDate(now);
-
-//        log.info("Parsed tweet: {}", tweet);
-        return tweet;
+        tweetRepository.saveAll(tweetsList);
+        log.info("Zapisano: {} tweetow do bazy z {} zescrapowanych. Ilość powtórzeń: {}", tweetsList.size(), scrappedTweets.size(), repeatCount);
     }
 
     private TweetDto saveTweet(Tweet tweet){

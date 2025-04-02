@@ -8,6 +8,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.Objects;
 
 @Builder
 @Data
@@ -55,4 +56,17 @@ public class Tweet {
     private LocalDateTime creationDate;
     @Column(name = "update_date", nullable = false)
     private LocalDateTime updateDate;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Tweet)) return false;
+        Tweet tweet = (Tweet) o;
+        return Objects.equals(link, tweet.link);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(link);
+    }
 }
