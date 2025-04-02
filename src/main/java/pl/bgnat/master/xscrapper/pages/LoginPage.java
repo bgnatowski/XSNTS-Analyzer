@@ -1,21 +1,22 @@
 package pl.bgnat.master.xscrapper.pages;
 
+import lombok.extern.slf4j.Slf4j;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import pl.bgnat.master.xscrapper.utils.CookieUtils;
-import pl.bgnat.master.xscrapper.utils.WaitUtils;
 
 import static pl.bgnat.master.xscrapper.utils.CookieUtils.loadCookiesFromFile;
 import static pl.bgnat.master.xscrapper.utils.CookieUtils.saveCookiesToFile;
-import static pl.bgnat.master.xscrapper.utils.WaitUtils.*;
+import static pl.bgnat.master.xscrapper.utils.WaitUtils.waitRandom;
 
+@Slf4j
 public class LoginPage extends BasePage {
     public LoginPage(WebDriver driver) {
         super(driver);
     }
 
-    public void acceptCookies() {
+    private void acceptCookies() {
         By cookiesLocator = By.xpath("//span[text()='Accept all cookies']");
         try {
             WebElement btn = waitForElement(cookiesLocator);
@@ -25,7 +26,7 @@ public class LoginPage extends BasePage {
         }
     }
 
-    public void login(String username, String email, String password) {
+    private void login(String username, String email, String password, CookieUtils.CookieUsers cookieUser) {
         open();
         acceptCookies();
         // Kliknij przycisk logowania
@@ -49,7 +50,6 @@ public class LoginPage extends BasePage {
         } catch (Exception e) {
             // formularz email może nie wystąpić – kontynuujemy
         }
-        waitRandom();
 
         // Wprowadź hasło
         WebElement passwordInput = waitForElement(By.xpath("//input[@name='password']"));
@@ -58,7 +58,7 @@ public class LoginPage extends BasePage {
         loginFormButton.click();
         waitRandom();
 
-        saveCookiesToFile(driver);
+        saveCookiesToFile(driver, cookieUser);
     }
 
     public boolean isLoggedIn() {
@@ -71,13 +71,14 @@ public class LoginPage extends BasePage {
         }
     }
 
-    public void loginIfNeeded(String username, String email, String password) {
+    public void loginIfNeeded(String username, String email, String password, CookieUtils.CookieUsers cookieUser) {
         open();
-        loadCookiesFromFile(driver);
+        loadCookiesFromFile(driver, cookieUser);
 //        refreshPage();
 
         if (!isLoggedIn()) {
-            login(username, email, password);
+            log.info("Loguje: {}", cookieUser);
+            login(username, email, password, cookieUser);
         }
     }
 }

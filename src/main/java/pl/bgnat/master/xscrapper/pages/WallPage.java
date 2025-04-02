@@ -2,7 +2,6 @@ package pl.bgnat.master.xscrapper.pages;
 
 import lombok.extern.slf4j.Slf4j;
 import org.openqa.selenium.*;
-import org.springframework.util.StringUtils;
 import pl.bgnat.master.xscrapper.model.Tweet;
 
 import java.net.URLEncoder;
@@ -11,16 +10,14 @@ import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import static org.springframework.util.StringUtils.hasLength;
 import static pl.bgnat.master.xscrapper.utils.TweetParser.*;
-import static pl.bgnat.master.xscrapper.utils.TweetParser.parseCountFromAriaLabel;
-import static pl.bgnat.master.xscrapper.utils.WaitUtils.*;
+import static pl.bgnat.master.xscrapper.utils.WaitUtils.waitRandom;
 
 @Slf4j
 public class WallPage extends BasePage {
-    private static final int MAX_TWEETS_PER_SCRAPE = 1000;
+    private static final int MAX_TWEETS_PER_SCRAPE = 100;
 
     public enum WallType {
         FOR_YOU, POPULAR, NEWEST
@@ -36,6 +33,7 @@ public class WallPage extends BasePage {
     }
 
     public void openPopular(String keyword){
+        log.info("Otwieram trendujacy tag: {}", keyword);
         String searchUrl = "/search?q=" + URLEncoder.encode(keyword, StandardCharsets.UTF_8);
         openSubPage(searchUrl);
     }

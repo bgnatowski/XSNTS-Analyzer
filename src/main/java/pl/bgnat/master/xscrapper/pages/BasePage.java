@@ -82,15 +82,23 @@ public abstract class BasePage {
     }
 
     protected void zoomOutAndReturn(){
-        driver.get("chrome://settings/");
-        executeScript("chrome.settingsPrivate.setDefaultZoom(0.3);");
-        driver.navigate().back();
+        try {
+            driver.get("chrome://settings/");
+            executeScript("chrome.settingsPrivate.setDefaultZoom(0.3);");
+            driver.navigate().back();
+        } catch (Exception e) {
+            log.info("Nie udało się oddalić i wrócić");
+        }
     }
 
     protected void resetZoomAndReturn(){
-        driver.get("chrome://settings/");
-        executeScript("chrome.settingsPrivate.setDefaultZoom(1);");
-        driver.navigate().back();
+        try {
+            driver.get("chrome://settings/");
+            executeScript("chrome.settingsPrivate.setDefaultZoom(1);");
+            driver.navigate().back();
+        } catch (Exception e) {
+            log.info("Nie udało się przywrocić pierwotnego zooma i wrócić");
+        }
     }
 
     protected void executeScript(String script) {
