@@ -17,7 +17,7 @@ import static pl.bgnat.master.xscrapper.utils.WaitUtils.waitRandom;
 
 @Slf4j
 public class WallPage extends BasePage {
-    private static final int MAX_TWEETS_PER_SCRAPE = 100;
+    private static final int MAX_TWEETS_PER_SCRAPE = 1000;
 
     public enum WallType {
         FOR_YOU, POPULAR, NEWEST
@@ -52,7 +52,7 @@ public class WallPage extends BasePage {
                     break;
                 }
 
-                scrollToBottom();
+                long lastHeight = scrollToBottom();
                 waitRandom();
 
                 List<WebElement> scrappedTweetElements = getTweetElements();
@@ -70,6 +70,14 @@ public class WallPage extends BasePage {
                     }
                 } else {
                     log.info("Nie znaleziono tweetów przy scrollowaniu. Ponawiam petle.");
+                }
+
+                long newHeight = scrollToBottom();
+                if (newHeight != lastHeight) {
+                    lastHeight = newHeight;
+                } else {
+                    log.info("Tweety się nie ładują. Osiągnięto bottom strony. Przerywam petle.");
+                    break;
                 }
             } catch (Exception e) {
                 refreshPage();

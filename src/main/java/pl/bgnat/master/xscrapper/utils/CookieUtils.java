@@ -27,7 +27,7 @@ public class CookieUtils {
 
         try {
             objectMapper.writerWithDefaultPrettyPrinter()
-                    .writeValue(new File(filePath), cookieDtoList);
+                    .writeValue(new File("cookies/"+filePath), cookieDtoList);
             log.info("Zapisano {} cookies do pliku {}", cookies.size(), filePath);
         } catch (IOException e) {
             log.error("IOException przy zapisie cookiesow. Message: {}", e.getMessage());
@@ -35,7 +35,7 @@ public class CookieUtils {
     }
 
     public static void loadCookiesFromFile(WebDriver driver, String filePath) {
-        File file = new File(filePath);
+        File file = new File("cookies/"+filePath);
         if (!file.exists()) {
             log.info("Plik {} nie istnieje. Brak cookies do wczytania.", filePath);
             return;

@@ -8,6 +8,8 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import pl.bgnat.master.xscrapper.config.CredentialProperties;
 import pl.bgnat.master.xscrapper.model.Tweet;
+import pl.bgnat.master.xscrapper.model.UserCredential;
+import pl.bgnat.master.xscrapper.model.UserCredential.User;
 import pl.bgnat.master.xscrapper.pages.LoginPage;
 import pl.bgnat.master.xscrapper.pages.TrendingPage;
 import pl.bgnat.master.xscrapper.pages.WallPage;
@@ -32,7 +34,7 @@ public class ScrapperService {
     private List<String> currentTrendingKeyword;
 
     //    @Scheduled(cron = "0 0 */2 * * * ")
-    @PostConstruct
+//    @PostConstruct
     public void scheduledScrapeForYouWall() {
         ChromeDriver forYouDriver = driverProvider.getObject();
         LoginPage loginPage = new LoginPage(forYouDriver, credentialProperties);
@@ -46,8 +48,8 @@ public class ScrapperService {
         tweetService.saveTweets(scrappedTweets);
     }
 
-    //    @Scheduled(cron = "0 0 */4 * * *")
-//    @PostConstruct
+    //    @Scheduled(cron = "0 0 */6 * * *")
+    @PostConstruct
     public void scheduledScrapeTrendingKeywords() {
         do {
             ChromeDriver trendingDriver = driverProvider.getObject();
@@ -63,22 +65,35 @@ public class ScrapperService {
             waitRandom();
         } while (currentTrendingKeyword.isEmpty());
 
-        scrapeTrendingWall(WallPage.WallType.POPULAR);
-        waitRandom();
         scrapeTrendingWall(WallPage.WallType.NEWEST);
+        waitRandom();
     }
 
     private void scrapeTrendingWall(WallPage.WallType wallType) {
-        ExecutorService executor = Executors.newFixedThreadPool(5);
+        int credentialCount = UserCredential.SIZE;
+        int index = 0;
+
+        ExecutorService executor = Executors.newFixedThreadPool(credentialCount);
         for (String keyword : currentTrendingKeyword) {
+            final int userIndex = index % credentialCount;
+            final int keywordIndex = index+1;
+            index++;
+
             executor.submit(() -> {
                 String originalName = Thread.currentThread().getName();
-                Thread.currentThread().setName(originalName + "-" + keyword);
+
+                String formattedThreadName = getFormattedThreadName(keyword, userIndex, keywordIndex);
+                Thread.currentThread().setName(formattedThreadName);
+
                 ChromeDriver trendDriver = driverProvider.getObject();
                 WallPage wallPage;
                 try {
+                    User userToBeLoggedIn = UserCredential.getUser(userIndex);
                     LoginPage loginPage = new LoginPage(trendDriver, credentialProperties);
-                    loginPage.loginIfNeeded(USER_1);
+                    loginPage.loginIfNeeded(userToBeLoggedIn);
+
+                    String usedUsername = credentialProperties.getCredentials().get(userIndex).username();
+                    log.info("Dla keyword: {} używam credentials użytkownika: {}", keyword, usedUsername);
 
                     wallPage = new WallPage(trendDriver);
 
@@ -92,10 +107,12 @@ public class ScrapperService {
                     tweetService.saveTweets(scrappedTweets);
                     waitRandom();
 
-                    wallPage.exit();
                     log.info("Zamykam trendujacy tag: {}", keyword);
+                    wallPage.exit();
                 } catch (Exception e) {
                     log.error("Błąd przy przetwarzaniu trendu: {}", keyword);
+                } finally {
+                    Thread.currentThread().setName(originalName);
                 }
             });
         }
@@ -109,5 +126,14 @@ public class ScrapperService {
             executor.shutdownNow();
             Thread.currentThread().interrupt();
         }
+    }
+
+    private static String getFormattedThreadName(String keyword, int userIndex, int keywordIndex) {
+        String leftPart = String.format("t%d%02d", userIndex, keywordIndex);
+        int maxKeywordLength = 15 - (leftPart.length()+1);
+        String truncatedKeyword = (keyword.length() > maxKeywordLength)
+                ? keyword.substring(0, maxKeywordLength)
+                : keyword;
+        return String.format("%s-%s", leftPart, truncatedKeyword);
     }
 }
