@@ -10,7 +10,7 @@ import pl.bgnat.master.xscrapper.utils.WaitUtils;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
-import static pl.bgnat.master.xscrapper.utils.WaitUtils.*;
+import static pl.bgnat.master.xscrapper.utils.WaitUtils.waitRandom;
 
 @Slf4j
 public abstract class BasePage {

@@ -28,14 +28,8 @@ public class WaitUtils {
         return wait.until(ExpectedConditions.visibilityOfAllElementsLocatedBy(locator));
     }
 
-    // Losowe oczekiwanie – min i max podawane są w milisekundach
     public static void waitRandom() {
-        try {
-            int randomWaitSeconds = ThreadLocalRandom.current().nextInt(MIN_WAIT_SECONDS, MAX_WAIT_SECONDS + 1);
-            Thread.sleep(randomWaitSeconds * 1000L);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
+        waitRandom(MIN_WAIT_SECONDS, MAX_WAIT_SECONDS);
     }
 
     public static void waitRandom(int minSeconds, int maxSeconds) {

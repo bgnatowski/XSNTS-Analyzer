@@ -4,16 +4,33 @@ import lombok.extern.slf4j.Slf4j;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
-import pl.bgnat.master.xscrapper.utils.CookieUtils;
+import pl.bgnat.master.xscrapper.config.CredentialProperties;
+import pl.bgnat.master.xscrapper.model.UserCredential;
 
+import static pl.bgnat.master.xscrapper.model.UserCredential.User;
 import static pl.bgnat.master.xscrapper.utils.CookieUtils.loadCookiesFromFile;
 import static pl.bgnat.master.xscrapper.utils.CookieUtils.saveCookiesToFile;
 import static pl.bgnat.master.xscrapper.utils.WaitUtils.waitRandom;
 
 @Slf4j
 public class LoginPage extends BasePage {
-    public LoginPage(WebDriver driver) {
+    private final CredentialProperties credentialProperties;
+
+    public LoginPage(WebDriver driver, CredentialProperties credentialProperties) {
         super(driver);
+        this.credentialProperties = credentialProperties;
+    }
+
+    public void loginIfNeeded(User user) {
+        open();
+        UserCredential userCredential = credentialProperties.getCredentials().get(user.ordinal());
+        loadCookiesFromFile(driver, userCredential.cookiePath());
+
+        if (!isLoggedIn()) {
+            log.info("Loguje: {}", user);
+            login(userCredential);
+            saveCookiesToFile(driver, userCredential.cookiePath());
+        }
     }
 
     private void acceptCookies() {
@@ -26,7 +43,7 @@ public class LoginPage extends BasePage {
         }
     }
 
-    private void login(String username, String email, String password, CookieUtils.CookieUsers cookieUser) {
+    private void login(UserCredential userCredential) {
         open();
         acceptCookies();
         // Kliknij przycisk logowania
@@ -36,7 +53,7 @@ public class LoginPage extends BasePage {
 
         // Wprowadź nazwę użytkownika
         WebElement usernameInput = waitForElement(By.xpath("//input[@name='text']"));
-        usernameInput.sendKeys(username);
+        usernameInput.sendKeys(userCredential.username());
         WebElement nextButton = waitForElement(By.xpath("//span[text()='Dalej']"));
         nextButton.click();
         waitRandom();
@@ -44,7 +61,7 @@ public class LoginPage extends BasePage {
         // Opcjonalnie – jeżeli pojawi się formularz email
         try {
             WebElement emailInput = waitForElement(By.xpath("//input[@data-testid='ocfEnterTextTextInput']"));
-            emailInput.sendKeys(email);
+            emailInput.sendKeys(userCredential.email());
             WebElement emailNextBtn = waitForElement(By.xpath("//span[text()='Dalej']"));
             emailNextBtn.click();
         } catch (Exception e) {
@@ -53,32 +70,18 @@ public class LoginPage extends BasePage {
 
         // Wprowadź hasło
         WebElement passwordInput = waitForElement(By.xpath("//input[@name='password']"));
-        passwordInput.sendKeys(password);
+        passwordInput.sendKeys(userCredential.password());
         WebElement loginFormButton = waitForElement(By.xpath("//button[@data-testid='LoginForm_Login_Button']"));
         loginFormButton.click();
-        waitRandom();
-
-        saveCookiesToFile(driver, cookieUser);
     }
 
-    public boolean isLoggedIn() {
+    private boolean isLoggedIn() {
         try {
             open();
             waitForElement(By.xpath("//article[@data-testid='tweet']"));
             return true;
         } catch (Exception e) {
             return false;
-        }
-    }
-
-    public void loginIfNeeded(String username, String email, String password, CookieUtils.CookieUsers cookieUser) {
-        open();
-        loadCookiesFromFile(driver, cookieUser);
-//        refreshPage();
-
-        if (!isLoggedIn()) {
-            log.info("Loguje: {}", cookieUser);
-            login(username, email, password, cookieUser);
         }
     }
 }

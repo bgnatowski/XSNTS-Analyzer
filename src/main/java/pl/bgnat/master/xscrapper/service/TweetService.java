@@ -10,9 +10,7 @@ import pl.bgnat.master.xscrapper.model.Tweet;
 import pl.bgnat.master.xscrapper.repository.TweetRepository;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 @Service
