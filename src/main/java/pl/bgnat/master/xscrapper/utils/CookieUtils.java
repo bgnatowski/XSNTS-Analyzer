@@ -7,50 +7,94 @@ import org.openqa.selenium.WebDriver;
 import pl.bgnat.master.xscrapper.dto.CookieDto;
 import pl.bgnat.master.xscrapper.mapper.CookieMapper;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static pl.bgnat.master.xscrapper.config.GlobalConfig.objectMapper;
 
 @Slf4j
 public class CookieUtils {
+    private static final String COOKIES_DIR = "cookies";
+    private static final Path COOKIES_DIR_PATH = Paths.get(COOKIES_DIR);
 
-    public static void saveCookiesToFile(WebDriver driver, String filePath) {
-        Set<Cookie> cookies = driver.manage().getCookies();
+    public static void deleteAllCookiesFiles() {
+        validateCookiesDirectory();
 
-        List<CookieDto> cookieDtoList = cookies.stream()
-                .map(CookieMapper.INSTANCE::seleniumCookieToDto)
-                .collect(Collectors.toList());
-
-        try {
-            objectMapper.writerWithDefaultPrettyPrinter()
-                    .writeValue(new File("cookies/"+filePath), cookieDtoList);
-            log.info("Zapisano {} cookies do pliku {}", cookies.size(), filePath);
+        try (Stream<Path> files = Files.walk(COOKIES_DIR_PATH)) {
+            files.filter(Files::isRegularFile)
+                    .forEach(path -> {
+                        try {
+                            Files.delete(path);
+                            System.out.println("Usunięto plik ciasteczek: " + path.getFileName());
+                        } catch (IOException e) {
+                            System.err.println("Błąd przy usuwaniu pliku " + path + ": " + e.getMessage());
+                        }
+                    });
         } catch (IOException e) {
-            log.error("IOException przy zapisie cookiesow. Message: {}", e.getMessage());
+            System.err.println("Błąd podczas czyszczenia katalogu cookies: " + e.getMessage());
         }
     }
 
-    public static void loadCookiesFromFile(WebDriver driver, String filePath) {
-        File file = new File("cookies/"+filePath);
-        if (!file.exists()) {
-            log.info("Plik {} nie istnieje. Brak cookies do wczytania.", filePath);
+    public static void saveCookiesToFile(WebDriver driver, String fileName) {
+        validateCookiesDirectory();
+
+        Set<Cookie> cookies = driver.manage().getCookies();
+        List<CookieDto> cookieDtoList = convertCookiesToDtoList(cookies);
+        Path filePath = COOKIES_DIR_PATH.resolve(fileName);
+
+        try {
+            objectMapper.writerWithDefaultPrettyPrinter().writeValue(filePath.toFile(), cookieDtoList);
+            log.info("Zapisano {} cookies do pliku {}", cookies.size(), filePath);
+        } catch (IOException e) {
+            log.error("Błąd zapisu cookies do pliku {}: {}", filePath, e.getMessage());
+        }
+    }
+
+    public static void loadCookiesFromFile(WebDriver driver, String fileName) {
+        Path filePath = COOKIES_DIR_PATH.resolve(fileName);
+
+        if (!Files.exists(filePath)) {
+            log.info("Plik {} nie istnieje", filePath);
             return;
         }
 
         try {
-            List<CookieDto> cookieDtoList = objectMapper.readValue(file, new TypeReference<>() {});
+            List<CookieDto> cookieDtoList = objectMapper.readValue(filePath.toFile(), new TypeReference<>() {});
+            cookieDtoList.stream()
+                    .map(CookieMapper.INSTANCE::buildCookie)
+                    .forEach(cookie -> driver.manage().addCookie(cookie));
 
-            for (CookieDto dto : cookieDtoList) {
-                Cookie cookie = CookieMapper.INSTANCE.buildCookie(dto);
-                driver.manage().addCookie(cookie);
-            }
             log.info("Załadowano {} cookies z pliku {}", cookieDtoList.size(), filePath);
         } catch (IOException e) {
-            log.error("IOException przy wczytywaniu cookiesow. Message: {}", e.getMessage());
+            log.error("Błąd wczytywania cookies z pliku {}: {}", filePath, e.getMessage());
+        }
+    }
+
+    private static List<CookieDto> convertCookiesToDtoList(Set<Cookie> cookies) {
+        if (cookies == null || cookies.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return cookies.stream()
+                .map(CookieMapper.INSTANCE::seleniumCookieToDto)
+                .collect(Collectors.toList());
+    }
+
+    private static void validateCookiesDirectory() {
+        try {
+            if (!Files.exists(COOKIES_DIR_PATH)) {
+                Files.createDirectories(COOKIES_DIR_PATH);
+                log.info("Utworzono katalog: {}", COOKIES_DIR_PATH);
+            }
+        } catch (IOException e) {
+            log.error("Błąd tworzenia katalogu cookies: {}", e.getMessage());
+            throw new IllegalStateException("Nie można utworzyć katalogu cookies", e);
         }
     }
 }

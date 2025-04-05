@@ -29,6 +29,8 @@ public class LoginPage extends BasePage {
         if (!isLoggedIn()) {
             log.info("Loguje: {}", user);
             login(userCredential);
+            openSubPage("/home");
+            waitRandom();
             saveCookiesToFile(driver, userCredential.cookiePath());
         }
     }

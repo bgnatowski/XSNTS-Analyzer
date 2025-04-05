@@ -12,4 +12,12 @@ import java.util.List;
 @ConfigurationProperties(prefix = "x")
 public class CredentialProperties {
     private List<UserCredential> credentials;
+
+    public String getProxyForUser(UserCredential.User user) {
+        UserCredential userCredential = getCredentials().get(user.ordinal());
+        if (!userCredential.useProxy()) {
+            return null;
+        }
+        return userCredential.proxy();
+    }
 }

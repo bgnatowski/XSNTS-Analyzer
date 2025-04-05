@@ -7,6 +7,7 @@ import org.openqa.selenium.chrome.ChromeDriver;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import pl.bgnat.master.xscrapper.config.CredentialProperties;
+import pl.bgnat.master.xscrapper.driver.DriverFactory;
 import pl.bgnat.master.xscrapper.model.Tweet;
 import pl.bgnat.master.xscrapper.model.UserCredential;
 import pl.bgnat.master.xscrapper.model.UserCredential.User;
@@ -28,15 +29,18 @@ import static pl.bgnat.master.xscrapper.utils.WaitUtils.waitRandom;
 @Slf4j
 public class ScrapperService {
     private final TweetService tweetService;
-    private final ObjectProvider<ChromeDriver> driverProvider;
+    private final DriverFactory driverFactory;
     private final CredentialProperties credentialProperties;
 
     private List<String> currentTrendingKeyword;
 
     //    @Scheduled(cron = "0 0 */2 * * * ")
-//    @PostConstruct
+    @PostConstruct
     public void scheduledScrapeForYouWall() {
-        ChromeDriver forYouDriver = driverProvider.getObject();
+        String proxyIpPort = credentialProperties.getProxyForUser(USER_2);
+        log.info("Proxy ip: {}", proxyIpPort);
+        ChromeDriver forYouDriver = driverFactory.createDriverWithProxy(proxyIpPort);
+
         LoginPage loginPage = new LoginPage(forYouDriver, credentialProperties);
         loginPage.loginIfNeeded(USER_2);
 
@@ -49,13 +53,14 @@ public class ScrapperService {
     }
 
     //    @Scheduled(cron = "0 0 */6 * * *")
-    @PostConstruct
+//    @PostConstruct
     public void scheduledScrapeTrendingKeywords() {
         do {
-            ChromeDriver trendingDriver = driverProvider.getObject();
+            String proxyIpPort = credentialProperties.getProxyForUser(USER_2);
+            ChromeDriver trendingDriver = driverFactory.createDriverWithProxy(proxyIpPort);
 
             LoginPage loginPage = new LoginPage(trendingDriver, credentialProperties);
-            loginPage.loginIfNeeded(USER_1);
+            loginPage.loginIfNeeded(USER_2);
 
             waitRandom();
             TrendingPage trendingPage = new TrendingPage(trendingDriver);
@@ -85,12 +90,14 @@ public class ScrapperService {
                 String formattedThreadName = getFormattedThreadName(keyword, userIndex, keywordIndex);
                 Thread.currentThread().setName(formattedThreadName);
 
-                ChromeDriver trendDriver = driverProvider.getObject();
+                User user = UserCredential.getUser(userIndex);
+                String proxyForUser = credentialProperties.getProxyForUser(USER_2);
+                ChromeDriver trendDriver = driverFactory.createDriverWithProxy(proxyForUser);
                 WallPage wallPage;
                 try {
-                    User userToBeLoggedIn = UserCredential.getUser(userIndex);
+
                     LoginPage loginPage = new LoginPage(trendDriver, credentialProperties);
-                    loginPage.loginIfNeeded(userToBeLoggedIn);
+                    loginPage.loginIfNeeded(user);
 
                     String usedUsername = credentialProperties.getCredentials().get(userIndex).username();
                     log.info("Dla keyword: {} używam credentials użytkownika: {}", keyword, usedUsername);

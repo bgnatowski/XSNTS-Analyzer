@@ -1,5 +1,6 @@
 package pl.bgnat.master.xscrapper.config;
 
+import org.openqa.selenium.Proxy;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
@@ -13,7 +14,6 @@ public class SeleniumConfig {
     @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
     public ChromeDriver driver() {
         ChromeOptions options = new ChromeOptions();
-//        options.addArguments("--headless");
         options.addArguments("disable_infobars");
         return new ChromeDriver(options);
     }
