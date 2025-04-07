@@ -41,3 +41,4 @@ cookies.json
 application-secret.yml.
 src/main/resources/application-secret.yaml
 /cookies/
+/chrome_proxy_ext/
