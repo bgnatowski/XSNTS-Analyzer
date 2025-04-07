@@ -21,7 +21,32 @@ spring:
     database: postgresql
     databasePlatform: org.hibernate.dialect.PostgreSQLDialect
 
+proxy-seller:
+  username: &proxy-username dummy-proxy-username
+  password: &proxy-password dummy-proxy-password
+  port: &proxy-port 1234
+
 x:
-  username: dummy
-  email: dummy@gmail.com
-  password: dummy
+  credentials:
+    -
+      username: dummyUsername1
+      email: dummyEmail1@gmail.com
+      password: dummyPass1
+      cookie-path: "cookies1.json"
+      proxy:
+        host: ""
+        port: ""
+        username: ""
+        password: ""
+      use-proxy: false
+    -
+      username: dummyUsername2
+      email: dummyEmail2@gmail.com
+      password: dummyPass2
+      cookie-path: "cookies2.json"
+      use-proxy: true
+      proxy:
+        host: 123.123.123.123
+        port: *proxy-port
+        username: *proxy-username
+        password: *proxy-password

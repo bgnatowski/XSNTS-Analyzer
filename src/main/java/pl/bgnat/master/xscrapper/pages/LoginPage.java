@@ -27,11 +27,11 @@ public class LoginPage extends BasePage {
         loadCookiesFromFile(driver, userCredential.cookiePath());
 
         if (!isLoggedIn()) {
-            log.info("Loguje: {}", user);
+//            log.info("Loguje: {}", user);
             login(userCredential);
-            openSubPage("/home");
-            waitRandom();
+//            log.info("Zalogowano: {}", user);
             saveCookiesToFile(driver, userCredential.cookiePath());
+            waitRandom();
         }
     }
 
@@ -75,6 +75,7 @@ public class LoginPage extends BasePage {
         passwordInput.sendKeys(userCredential.password());
         WebElement loginFormButton = waitForElement(By.xpath("//button[@data-testid='LoginForm_Login_Button']"));
         loginFormButton.click();
+        waitRandom();
     }
 
     private boolean isLoggedIn() {

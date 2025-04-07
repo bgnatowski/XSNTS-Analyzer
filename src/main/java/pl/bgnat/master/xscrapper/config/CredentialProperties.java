@@ -4,6 +4,7 @@ import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.ComponentScan;
 import pl.bgnat.master.xscrapper.model.UserCredential;
+import pl.bgnat.master.xscrapper.model.UserProxy;
 
 import java.util.List;
 
@@ -15,9 +16,11 @@ public class CredentialProperties {
 
     public String getProxyForUser(UserCredential.User user) {
         UserCredential userCredential = getCredentials().get(user.ordinal());
-        if (!userCredential.useProxy()) {
-            return null;
+        String proxyAuth = "";
+        if (userCredential.useProxy() && userCredential.proxy() != null) {
+            UserProxy proxy = userCredential.proxy();
+            proxyAuth = proxy.username() + ":" + proxy.password() + "@" + proxy.host() + ":" + proxy.port();
         }
-        return userCredential.proxy();
+        return proxyAuth;
     }
 }

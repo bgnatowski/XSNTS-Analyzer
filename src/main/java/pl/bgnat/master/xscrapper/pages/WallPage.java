@@ -4,8 +4,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.openqa.selenium.*;
 import pl.bgnat.master.xscrapper.model.Tweet;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
@@ -20,7 +18,7 @@ public class WallPage extends BasePage {
     private static final int MAX_TWEETS_PER_SCRAPE = 1000;
 
     public enum WallType {
-        FOR_YOU, POPULAR, NEWEST
+        FOR_YOU, POPULAR, LATEST
     }
 
     public WallPage(WebDriver driver) {
@@ -34,17 +32,17 @@ public class WallPage extends BasePage {
 
     public void openPopular(String keyword){
         log.info("Otwieram trendujacy tag: {}", keyword);
-        String searchUrl = "/search?q=" + URLEncoder.encode(keyword, StandardCharsets.UTF_8);
-        openSubPage(searchUrl);
+        navigateRandomly(keyword);
     }
 
-    public void openNewest(String keyword){
-        String searchUrl = "/search?q=" + URLEncoder.encode(keyword, StandardCharsets.UTF_8) + "&f=live";
-        openSubPage(searchUrl);
+    public void openLatest(String keyword){
+        log.info("Otwieram trendujacy tag: {}, najnowsze", keyword);
+        navigateRandomlyToLatest(keyword);
     }
 
     public Set<Tweet> scrapeTweets() {
         Set<Tweet> tweets = new HashSet<>();
+        int repeatedBottom = 0;
         while (true) {
             try {
                 waitRandom();
@@ -72,12 +70,18 @@ public class WallPage extends BasePage {
                     log.info("Nie znaleziono tweetów przy scrollowaniu. Ponawiam petle.");
                 }
 
+                if(repeatedBottom > 5){
+                    log.info("Tweety się nie ładują przez 5 odswiezen. Przerywam petle.");
+                    break;
+                }
+
                 long newHeight = scrollToBottom();
                 if (newHeight != lastHeight) {
                     lastHeight = newHeight;
                 } else {
-                    log.info("Tweety się nie ładują. Osiągnięto bottom strony. Przerywam petle.");
-                    break;
+                    log.info("Tweety się nie ładują. Osiągnięto bottom strony. Refreshuje");
+                    repeatedBottom++;
+                    refreshPage();
                 }
             } catch (Exception e) {
                 refreshPage();
@@ -144,7 +148,7 @@ public class WallPage extends BasePage {
         try {
             By newPostsButtonLocator = By.xpath("//button[.//div[@data-testid='pillLabel']]");
             WebElement newPostsButton = findElement(newPostsButtonLocator);
-            log.info("Szukam przycisku 'See new posts'.");
+//            log.info("Szukam przycisku 'See new posts'.");
             if (newPostsButton != null && newPostsButton.isDisplayed() && newPostsButton.isEnabled()) {
                 newPostsButton.click();
                 log.info("Kliknięto przycisk 'See new posts'.");

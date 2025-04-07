@@ -4,7 +4,6 @@ import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.openqa.selenium.chrome.ChromeDriver;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import pl.bgnat.master.xscrapper.config.CredentialProperties;
 import pl.bgnat.master.xscrapper.driver.DriverFactory;
@@ -14,6 +13,7 @@ import pl.bgnat.master.xscrapper.model.UserCredential.User;
 import pl.bgnat.master.xscrapper.pages.LoginPage;
 import pl.bgnat.master.xscrapper.pages.TrendingPage;
 import pl.bgnat.master.xscrapper.pages.WallPage;
+import pl.bgnat.master.xscrapper.pages.WallPage.WallType;
 
 import java.util.List;
 import java.util.Set;
@@ -21,7 +21,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import static pl.bgnat.master.xscrapper.model.UserCredential.User.*;
+import static pl.bgnat.master.xscrapper.model.UserCredential.User.USER_1;
+import static pl.bgnat.master.xscrapper.model.UserCredential.User.USER_3;
+import static pl.bgnat.master.xscrapper.pages.WallPage.WallType.*;
 import static pl.bgnat.master.xscrapper.utils.WaitUtils.waitRandom;
 
 @Service
@@ -35,32 +37,75 @@ public class ScrapperService {
     private List<String> currentTrendingKeyword;
 
     //    @Scheduled(cron = "0 0 */2 * * * ")
-    @PostConstruct
+//    @PostConstruct
     public void scheduledScrapeForYouWall() {
-        String proxyIpPort = credentialProperties.getProxyForUser(USER_2);
-        log.info("Proxy ip: {}", proxyIpPort);
-        ChromeDriver forYouDriver = driverFactory.createDriverWithProxy(proxyIpPort);
+        scrapeForYou(USER_3);
+    }
 
-        LoginPage loginPage = new LoginPage(forYouDriver, credentialProperties);
-        loginPage.loginIfNeeded(USER_2);
+    //    @Scheduled(cron = "0 0 */6 * * *")
+    public void scheduledScrapeForYouWallAsync() {
+        int credentialCount = UserCredential.SIZE;
+        int index = 0;
 
-        WallPage wallPage = new WallPage(forYouDriver);
+        ExecutorService executor = Executors.newFixedThreadPool(credentialCount);
+        for (User user : UserCredential.User.values()) {
+            final int userIndex = index % credentialCount;
+            final int keywordIndex = index + 1;
+            index++;
+
+            executor.submit(() -> {
+                String originalName = Thread.currentThread().getName();
+                try {
+                    String formattedThreadName = getFormattedThreadName(user.name(), userIndex, keywordIndex);
+                    Thread.currentThread().setName(formattedThreadName);
+
+                    scrapeForYou(user);
+                    waitRandom();
+                } catch (Exception e) {
+                    log.error("Błąd przy przetwarzaniu ForYou dla: {}", user.name());
+                } finally {
+                    Thread.currentThread().setName(originalName);
+                }
+            });
+        }
+
+        executor.shutdown();
+        try {
+            if (!executor.awaitTermination(4, TimeUnit.HOURS)) {
+                executor.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            executor.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    private void scrapeForYou(User user) {
+        String proxyForUser = credentialProperties.getProxyForUser(user);
+        ChromeDriver userDriver = driverFactory.createDriverWithAuthProxy(proxyForUser);
+
+        LoginPage loginPage = new LoginPage(userDriver, credentialProperties);
+        loginPage.loginIfNeeded(user);
+
+        WallPage wallPage = new WallPage(userDriver);
         wallPage.openForYou();
 
         Set<Tweet> scrappedTweets = wallPage.scrapeTweets();
 
         tweetService.saveTweets(scrappedTweets);
+
+        log.info("Zamykam ForYou dla: {}", user);
+        wallPage.exit();
     }
 
-    //    @Scheduled(cron = "0 0 */6 * * *")
-//    @PostConstruct
+    @PostConstruct
     public void scheduledScrapeTrendingKeywords() {
         do {
-            String proxyIpPort = credentialProperties.getProxyForUser(USER_2);
-            ChromeDriver trendingDriver = driverFactory.createDriverWithProxy(proxyIpPort);
+            String proxyIpPort = credentialProperties.getProxyForUser(USER_1);
+            ChromeDriver trendingDriver = driverFactory.createDriverWithAuthProxy(proxyIpPort);
 
             LoginPage loginPage = new LoginPage(trendingDriver, credentialProperties);
-            loginPage.loginIfNeeded(USER_2);
+            loginPage.loginIfNeeded(USER_1);
 
             waitRandom();
             TrendingPage trendingPage = new TrendingPage(trendingDriver);
@@ -70,31 +115,29 @@ public class ScrapperService {
             waitRandom();
         } while (currentTrendingKeyword.isEmpty());
 
-        scrapeTrendingWall(WallPage.WallType.NEWEST);
+        scrapeTrendingWall(LATEST);
         waitRandom();
     }
 
-    private void scrapeTrendingWall(WallPage.WallType wallType) {
+    private void scrapeTrendingWall(WallType wallType) {
         int credentialCount = UserCredential.SIZE;
         int index = 0;
 
         ExecutorService executor = Executors.newFixedThreadPool(credentialCount);
         for (String keyword : currentTrendingKeyword) {
             final int userIndex = index % credentialCount;
-            final int keywordIndex = index+1;
+            final int keywordIndex = index + 1;
             index++;
 
             executor.submit(() -> {
                 String originalName = Thread.currentThread().getName();
-
-                String formattedThreadName = getFormattedThreadName(keyword, userIndex, keywordIndex);
-                Thread.currentThread().setName(formattedThreadName);
-
-                User user = UserCredential.getUser(userIndex);
-                String proxyForUser = credentialProperties.getProxyForUser(USER_2);
-                ChromeDriver trendDriver = driverFactory.createDriverWithProxy(proxyForUser);
-                WallPage wallPage;
                 try {
+                    String formattedThreadName = getFormattedThreadName(keyword, userIndex, keywordIndex);
+                    Thread.currentThread().setName(formattedThreadName);
+
+                    User user = UserCredential.getUser(userIndex);
+                    String proxyForUser = credentialProperties.getProxyForUser(user);
+                    ChromeDriver trendDriver = driverFactory.createDriverWithAuthProxy(proxyForUser);
 
                     LoginPage loginPage = new LoginPage(trendDriver, credentialProperties);
                     loginPage.loginIfNeeded(user);
@@ -102,11 +145,11 @@ public class ScrapperService {
                     String usedUsername = credentialProperties.getCredentials().get(userIndex).username();
                     log.info("Dla keyword: {} używam credentials użytkownika: {}", keyword, usedUsername);
 
-                    wallPage = new WallPage(trendDriver);
+                    WallPage wallPage = new WallPage(trendDriver);
 
                     switch (wallType) {
                         case POPULAR -> wallPage.openPopular(keyword);
-                        case NEWEST -> wallPage.openNewest(keyword);
+                        case LATEST -> wallPage.openLatest(keyword);
                     }
 
                     Set<Tweet> scrappedTweets = wallPage.scrapeTweets();
@@ -137,7 +180,7 @@ public class ScrapperService {
 
     private static String getFormattedThreadName(String keyword, int userIndex, int keywordIndex) {
         String leftPart = String.format("t%d%02d", userIndex, keywordIndex);
-        int maxKeywordLength = 15 - (leftPart.length()+1);
+        int maxKeywordLength = 15 - (leftPart.length() + 1);
         String truncatedKeyword = (keyword.length() > maxKeywordLength)
                 ? keyword.substring(0, maxKeywordLength)
                 : keyword;

@@ -11,8 +11,8 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class WaitUtils {
-    private static final int MIN_WAIT_SECONDS = 3;
-    private static final int MAX_WAIT_SECONDS = 10;
+    private static final int MIN_WAIT_SECONDS = 3000;
+    private static final int MAX_WAIT_SECONDS = 10000;
 
     // Oczekuje na pojawienie się pojedynczego elementu
     public static WebElement waitForElement(WebDriver driver, By locator) {
@@ -32,10 +32,10 @@ public class WaitUtils {
         waitRandom(MIN_WAIT_SECONDS, MAX_WAIT_SECONDS);
     }
 
-    public static void waitRandom(int minSeconds, int maxSeconds) {
+    public static void waitRandom(int minMs, int maxMs) {
         try {
-            int randomWaitSeconds = ThreadLocalRandom.current().nextInt(minSeconds, maxSeconds + 1);
-            Thread.sleep(randomWaitSeconds * 1000L);
+            int randomWaitSeconds = ThreadLocalRandom.current().nextInt(minMs, maxMs + 1);
+            Thread.sleep(randomWaitSeconds);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }

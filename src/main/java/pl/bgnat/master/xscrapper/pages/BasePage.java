@@ -2,12 +2,16 @@ package pl.bgnat.master.xscrapper.pages;
 
 import lombok.extern.slf4j.Slf4j;
 import org.openqa.selenium.By;
+import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 import pl.bgnat.master.xscrapper.utils.WaitUtils;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static pl.bgnat.master.xscrapper.utils.WaitUtils.waitRandom;
@@ -119,5 +123,79 @@ public abstract class BasePage {
 //            log.info("Height: {}", newHeight);
         }
         return newHeight;
+    }
+
+    protected void navigateRandomly(String keyword) {
+        Random random = new Random();
+        boolean useSendKeys = random.nextDouble() <= 0.6;
+        String searchUrl = "/search?q=" + URLEncoder.encode(keyword, StandardCharsets.UTF_8);
+
+        if (useSendKeys) {
+            log.info("Nawigacja za pomocą sendKeys do: {}", keyword);
+            try {
+                // Metoda 1: Użycie sendKeys
+                WebElement searchBox = waitForElement(By.xpath("//input[@data-testid='SearchBox_Search_Input']"));
+                searchBox.sendKeys(keyword);
+                searchBox.sendKeys(Keys.ENTER);
+
+                // Wpisanie adresu z losowymi opóźnieniami między znakami
+                for (char c : keyword.toCharArray()) {
+                    searchBox.sendKeys(String.valueOf(c));
+                    waitRandom(50, 150); // Losowe opóźnienie między wpisywaniem znaków
+                }
+
+                waitRandom(300, 800);
+                searchBox.sendKeys(Keys.ENTER);
+            } catch (Exception e) {
+                // W przypadku błędu, użyj metody zapasowej
+                log.warn("Błąd przy użyciu sendKeys, przechodzę do metody zapasowej: {}", e.getMessage());
+                openSubPage(searchUrl);
+            }
+        } else {
+            log.info("Bezpośrednie otwarcie podstrony: {}", searchUrl);
+            // Metoda 2: Bezpośrednie otwarcie podstrony
+            openSubPage(searchUrl);
+        }
+
+        // Dodaj losowe opóźnienie po nawigacji
+        waitRandom(2000, 5000);
+    }
+
+    protected void navigateRandomlyToLatest(String keyword) {
+        Random random = new Random();
+        boolean useSendKeys = random.nextDouble() <= 0.6;
+        String searchUrl = "/search?q=" + URLEncoder.encode(keyword, StandardCharsets.UTF_8) + "&f=live";
+
+        if (useSendKeys) {
+            log.info("Nawigacja za pomocą sendKeys do: {}", keyword);
+            try {
+                // Metoda 1: Użycie sendKeys
+                WebElement searchBox = waitForElement(By.xpath("//input[@data-testid='SearchBox_Search_Input']"));
+                searchBox.sendKeys(keyword);
+                searchBox.sendKeys(Keys.ENTER);
+
+                // Wpisanie adresu z losowymi opóźnieniami między znakami
+                for (char c : keyword.toCharArray()) {
+                    searchBox.sendKeys(String.valueOf(c));
+                    waitRandom(50, 150); // Losowe opóźnienie między wpisywaniem znaków
+                }
+
+                waitRandom(300, 800);
+                searchBox.sendKeys(Keys.ENTER);
+
+                waitRandom();
+                WebElement newest = waitForElement(By.xpath("//span[contains(text(),'Latest')]"));
+                newest.click();
+            } catch (Exception e) {
+                log.warn("Błąd przy użyciu sendKeys, przechodzę do metody zapasowej: {}", e.getMessage());
+                openSubPage(searchUrl);
+            }
+        } else {
+            log.info("Bezpośrednie otwarcie podstrony: {}", searchUrl);
+            openSubPage(searchUrl);
+        }
+
+        // Dodaj losowe opóźnienie po nawigacji
+        waitRandom(2000, 5000);
     }
 }
