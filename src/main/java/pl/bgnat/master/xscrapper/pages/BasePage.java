@@ -39,27 +39,34 @@ public abstract class BasePage {
         driver.get(BASE_URL + subUrl);
     }
 
-    // Metoda oczekuje na pojedynczy element
     protected WebElement waitForElement(By locator) {
         return WaitUtils.waitForElement(driver, locator);
     }
 
-    // Metoda oczekuje na listę elementów
     protected List<WebElement> waitForElements(By locator) {
         return WaitUtils.waitForElements(driver, locator);
     }
 
-    // Metoda szuka pojedynczego element
     protected WebElement findElement(By locator) {
         return driver.findElement(locator);
     }
 
-    // Metoda szuka elementów
     protected List<WebElement> findElements(By locator) {
         return driver.findElements(locator);
     }
 
-    // Proste przewinięcie do dołu strony
+    public long smartScroll() {
+        double randomProbability = Math.random();
+
+        if (randomProbability <= 0.6) { // 60% szans
+            log.debug("Wylosowano scrollByRandom (prawdopodobieństwo: {})", randomProbability);
+            return scrollByRandom();
+        } else {
+            log.debug("Wylosowano scrollToBottom (prawdopodobieństwo: {})", randomProbability);
+            return scrollToBottom();
+        }
+    }
+
     protected long scrollToBottom() {
         ((ChromeDriver) driver).executeScript("window.scrollTo(0, document.body.scrollHeight)");
         return calculateHeight();
@@ -70,15 +77,20 @@ public abstract class BasePage {
     }
 
     protected long scrollByRandom(){
-        final int minScroll = 200;
-        final int maxScroll = 2000;
-        int randomScroll = ThreadLocalRandom.current().nextInt(minScroll, maxScroll + 1);
+        final int minScroll = 2000;
+        final int maxScroll = 10000;
+        final int increment = 500;
+
+        int possibleValues = ((maxScroll - minScroll) / increment) + 1;
+
+        int randomIndex = ThreadLocalRandom.current().nextInt(possibleValues);
+        int randomScroll = minScroll + (randomIndex * increment);
+
         return scrollBy(randomScroll);
     }
 
     protected long scrollBy(int x){
         String scrollScript = "window.scrollBy(0, " + x + ")";
-        log.info("Scrolluje");
         ((ChromeDriver) driver).executeScript(scrollScript);
         waitRandom();
 
@@ -109,10 +121,8 @@ public abstract class BasePage {
         ((ChromeDriver) driver).executeScript(script);
     }
 
-    // Odświeżenie strony z krótkim losowym opóźnieniem
     protected void refreshPage() {
         driver.navigate().refresh();
-        waitRandom();
     }
 
     private long calculateHeight(){
@@ -120,8 +130,8 @@ public abstract class BasePage {
         long newHeight = 0L;
         if (expectedHeight instanceof Long) {
             newHeight = (long) expectedHeight;
-//            log.info("Height: {}", newHeight);
         }
+        waitRandom();
         return newHeight;
     }
 
@@ -133,31 +143,26 @@ public abstract class BasePage {
         if (useSendKeys) {
             log.info("Nawigacja za pomocą sendKeys do: {}", keyword);
             try {
-                // Metoda 1: Użycie sendKeys
                 WebElement searchBox = waitForElement(By.xpath("//input[@data-testid='SearchBox_Search_Input']"));
                 searchBox.sendKeys(keyword);
                 searchBox.sendKeys(Keys.ENTER);
 
-                // Wpisanie adresu z losowymi opóźnieniami między znakami
                 for (char c : keyword.toCharArray()) {
                     searchBox.sendKeys(String.valueOf(c));
-                    waitRandom(50, 150); // Losowe opóźnienie między wpisywaniem znaków
+                    waitRandom(50, 150);
                 }
 
                 waitRandom(300, 800);
                 searchBox.sendKeys(Keys.ENTER);
             } catch (Exception e) {
-                // W przypadku błędu, użyj metody zapasowej
                 log.warn("Błąd przy użyciu sendKeys, przechodzę do metody zapasowej: {}", e.getMessage());
                 openSubPage(searchUrl);
             }
         } else {
             log.info("Bezpośrednie otwarcie podstrony: {}", searchUrl);
-            // Metoda 2: Bezpośrednie otwarcie podstrony
             openSubPage(searchUrl);
         }
 
-        // Dodaj losowe opóźnienie po nawigacji
         waitRandom(2000, 5000);
     }
 
@@ -169,15 +174,13 @@ public abstract class BasePage {
         if (useSendKeys) {
             log.info("Nawigacja za pomocą sendKeys do: {}", keyword);
             try {
-                // Metoda 1: Użycie sendKeys
                 WebElement searchBox = waitForElement(By.xpath("//input[@data-testid='SearchBox_Search_Input']"));
                 searchBox.sendKeys(keyword);
                 searchBox.sendKeys(Keys.ENTER);
 
-                // Wpisanie adresu z losowymi opóźnieniami między znakami
                 for (char c : keyword.toCharArray()) {
                     searchBox.sendKeys(String.valueOf(c));
-                    waitRandom(50, 150); // Losowe opóźnienie między wpisywaniem znaków
+                    waitRandom(50, 150);
                 }
 
                 waitRandom(300, 800);
@@ -194,8 +197,6 @@ public abstract class BasePage {
             log.info("Bezpośrednie otwarcie podstrony: {}", searchUrl);
             openSubPage(searchUrl);
         }
-
-        // Dodaj losowe opóźnienie po nawigacji
         waitRandom(2000, 5000);
     }
 }

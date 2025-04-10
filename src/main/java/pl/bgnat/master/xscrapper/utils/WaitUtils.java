@@ -11,25 +11,23 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class WaitUtils {
-    private static final int MIN_WAIT_SECONDS = 3000;
-    private static final int MAX_WAIT_SECONDS = 10000;
+    private static final int MIN_WAIT_MILLIS = 3000;
+    private static final int MAX_WAIT_MILLIS = 10000;
 
-    // Oczekuje na pojawienie się pojedynczego elementu
     public static WebElement waitForElement(WebDriver driver, By locator) {
-        int randomWaitSeconds = ThreadLocalRandom.current().nextInt(MIN_WAIT_SECONDS, MAX_WAIT_SECONDS + 1);
-        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(randomWaitSeconds));
+        int randomWaitSeconds = ThreadLocalRandom.current().nextInt(MIN_WAIT_MILLIS, MAX_WAIT_MILLIS + 1);
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofMillis(randomWaitSeconds));
         return wait.until(ExpectedConditions.visibilityOfElementLocated(locator));
     }
 
-    // Oczekuje na pojawienie się listy elementów
     public static List<WebElement> waitForElements(WebDriver driver, By locator) {
-        int randomWaitSeconds = ThreadLocalRandom.current().nextInt(MIN_WAIT_SECONDS, MAX_WAIT_SECONDS + 1);
-        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(randomWaitSeconds));
+        int randomWaitSeconds = ThreadLocalRandom.current().nextInt(MIN_WAIT_MILLIS, MAX_WAIT_MILLIS + 1);
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofMillis(randomWaitSeconds));
         return wait.until(ExpectedConditions.visibilityOfAllElementsLocatedBy(locator));
     }
 
     public static void waitRandom() {
-        waitRandom(MIN_WAIT_SECONDS, MAX_WAIT_SECONDS);
+        waitRandom(MIN_WAIT_MILLIS, MAX_WAIT_MILLIS);
     }
 
     public static void waitRandom(int minMs, int maxMs) {

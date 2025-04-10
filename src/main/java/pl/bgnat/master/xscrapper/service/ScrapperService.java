@@ -7,8 +7,8 @@ import org.openqa.selenium.chrome.ChromeDriver;
 import org.springframework.stereotype.Service;
 import pl.bgnat.master.xscrapper.config.CredentialProperties;
 import pl.bgnat.master.xscrapper.model.Tweet;
-import pl.bgnat.master.xscrapper.model.UserCredential;
-import pl.bgnat.master.xscrapper.model.UserCredential.User;
+import pl.bgnat.master.xscrapper.dto.UserCredential;
+import pl.bgnat.master.xscrapper.dto.UserCredential.User;
 import pl.bgnat.master.xscrapper.pages.LoginPage;
 import pl.bgnat.master.xscrapper.pages.TrendingPage;
 import pl.bgnat.master.xscrapper.pages.WallPage;
@@ -20,9 +20,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import static pl.bgnat.master.xscrapper.model.UserCredential.User.USER_1;
-import static pl.bgnat.master.xscrapper.model.UserCredential.User.USER_3;
-import static pl.bgnat.master.xscrapper.pages.WallPage.WallType.LATEST;
+import static pl.bgnat.master.xscrapper.dto.UserCredential.User.*;
+import static pl.bgnat.master.xscrapper.pages.WallPage.WallType.*;
 import static pl.bgnat.master.xscrapper.utils.WaitUtils.waitRandom;
 
 @Service
@@ -30,7 +29,7 @@ import static pl.bgnat.master.xscrapper.utils.WaitUtils.waitRandom;
 @Slf4j
 public class ScrapperService {
     private final TweetService tweetService;
-    private final DolphinAntyService dolphinAntyService;
+    private final AdsPowerService adsPowerService;
     private final CredentialProperties credentialProperties;
 
     private List<String> currentTrendingKeyword;
@@ -80,12 +79,12 @@ public class ScrapperService {
     }
 
     private void scrapeForYou(User user) {
-        ChromeDriver userDriver =dolphinAntyService.getDriverForUser(user);
+        ChromeDriver userDriver = adsPowerService.getDriverForUser(user);
 
         LoginPage loginPage = new LoginPage(userDriver, credentialProperties);
         loginPage.loginIfNeeded(user);
 
-        WallPage wallPage = new WallPage(userDriver);
+        WallPage wallPage = new WallPage(userDriver, user);
         wallPage.openForYou();
 
         Set<Tweet> scrappedTweets = wallPage.scrapeTweets();
@@ -96,10 +95,11 @@ public class ScrapperService {
         wallPage.exit();
     }
 
-    //    @PostConstruct
+    @PostConstruct
     public void scheduledScrapeTrendingKeywords() {
+        User userForTrendings = USER_1;
         do {
-            ChromeDriver trendingDriver = dolphinAntyService.getDriverForUser(USER_1);
+            ChromeDriver trendingDriver = adsPowerService.getDriverForUser(userForTrendings);
 
             LoginPage loginPage = new LoginPage(trendingDriver, credentialProperties);
             loginPage.loginIfNeeded(USER_1);
@@ -107,45 +107,41 @@ public class ScrapperService {
             waitRandom();
             TrendingPage trendingPage = new TrendingPage(trendingDriver);
             currentTrendingKeyword = trendingPage.scrapeTrendingKeywords();
-            trendingPage.exit();
 
             waitRandom();
         } while (currentTrendingKeyword.isEmpty());
-
+        adsPowerService.stopDriver(userForTrendings);
         scrapeTrendingWall(LATEST);
         waitRandom();
     }
 
-    @PostConstruct
-    private void scrapeTrendingWallTest() {
-        String keyword = "Vinted";
-        WallType wallType = WallType.LATEST;
+//    @PostConstruct
+    private void scrapeOneByKeyword() {
+        String keyword = "Smolensku";
+        WallType wallType = LATEST;
+        User user = USER_1;
+        WallPage wallPage;
         try {
-            User user = User.USER_2;
-            ChromeDriver trendDriver = dolphinAntyService.getDriverForUser(user);
+            ChromeDriver trendDriver = adsPowerService.getDriverForUser(user);
 
             LoginPage loginPage = new LoginPage(trendDriver, credentialProperties);
             loginPage.loginIfNeeded(user);
-//
-            String usedUsername = credentialProperties.getCredentials().get(user.ordinal()).username();
-            log.info("Dla keyword: {} używam credentials użytkownika: {}", keyword, usedUsername);
-//
-//            WallPage wallPage = new WallPage(trendDriver);
-//
-//            switch (wallType) {
-//                case POPULAR -> wallPage.openPopular(keyword);
-//                case LATEST -> wallPage.openLatest(keyword);
-//            }
-//
-//            Set<Tweet> scrappedTweets = wallPage.scrapeTweets();
-//
-//            tweetService.saveTweets(scrappedTweets);
-//            waitRandom();
 
-            log.info("Zamykam keyword: {}", keyword);
-//            wallPage.exit();
+            wallPage = new WallPage(trendDriver, user);
+
+            switch (wallType) {
+                case POPULAR -> wallPage.openPopular(keyword);
+                case LATEST -> wallPage.openLatest(keyword);
+            }
+
+            Set<Tweet> scrappedTweets = wallPage.scrapeTweets();
+
+            tweetService.saveTweets(scrappedTweets);
+            waitRandom();
         } catch (Exception e) {
             log.error("Błąd przy przetwarzaniu keyworda: {}", keyword);
+        } finally {
+            adsPowerService.stopDriver(user);
         }
 
     }
@@ -162,20 +158,18 @@ public class ScrapperService {
 
             executor.submit(() -> {
                 String originalName = Thread.currentThread().getName();
+                User user = UserCredential.getUser(userIndex);
+
                 try {
                     String formattedThreadName = getFormattedThreadName(keyword, userIndex, keywordIndex);
                     Thread.currentThread().setName(formattedThreadName);
 
-                    User user = UserCredential.getUser(userIndex);
-                    ChromeDriver trendDriver = dolphinAntyService.getDriverForUser(user);
+                    ChromeDriver trendDriver = adsPowerService.getDriverForUser(user);
 
                     LoginPage loginPage = new LoginPage(trendDriver, credentialProperties);
                     loginPage.loginIfNeeded(user);
 
-                    String usedUsername = credentialProperties.getCredentials().get(userIndex).username();
-                    log.info("Dla keyword: {} używam credentials użytkownika: {}", keyword, usedUsername);
-
-                    WallPage wallPage = new WallPage(trendDriver);
+                    WallPage wallPage = new WallPage(trendDriver, user);
 
                     switch (wallType) {
                         case POPULAR -> wallPage.openPopular(keyword);
@@ -186,13 +180,12 @@ public class ScrapperService {
 
                     tweetService.saveTweets(scrappedTweets);
                     waitRandom();
-
-                    log.info("Zamykam trendujacy tag: {}", keyword);
-                    wallPage.exit();
                 } catch (Exception e) {
-                    log.error("Błąd przy przetwarzaniu trendu: {}", keyword);
+                    log.error("Błąd przy przetwarzaniu trendu: {}. ErrorMsg: {}", keyword, e.getMessage());
                 } finally {
                     Thread.currentThread().setName(originalName);
+                    log.info("Zamykam trendujacy tag: {}", keyword);
+                    adsPowerService.stopDriver(user);
                 }
             });
         }

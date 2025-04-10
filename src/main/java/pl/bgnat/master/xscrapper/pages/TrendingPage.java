@@ -17,7 +17,6 @@ public class TrendingPage extends BasePage {
 
     public TrendingPage(WebDriver driver) {
         super(driver);
-        zoomOutAndReturn();
     }
 
     public List<String> scrapeTrendingKeywords() {
@@ -57,12 +56,10 @@ public class TrendingPage extends BasePage {
         openSubPage(TRENDING_SUB_URL);
     }
 
-    // Pobiera elementy trendów – zakładamy, że selektor dotyczy divów z data-testid="trend" i role="link"
     private List<WebElement> getTrendElements() {
         return waitForElements(By.xpath(".//div[@data-testid='trend' and @role='link']"));
     }
 
-    // Wyciąga tekst trendu – przyjmujemy, że interesujący nas tekst (np. nazwa) jest w drugim divie wewnątrz kontenera
     private String extractTrending(WebElement trendElement) {
         try {
             WebElement innerDiv = trendElement.findElement(By.xpath("./div"));
@@ -76,7 +73,6 @@ public class TrendingPage extends BasePage {
     }
 
     private List<String> extractTrendKeyword(Set<String> trendsKeywords) {
-        // Wyodrębniamy tylko część po numeracji
         return trendsKeywords.stream()
                 .map(entry -> {
                     String[] parts = entry.split("\\. ", 2);

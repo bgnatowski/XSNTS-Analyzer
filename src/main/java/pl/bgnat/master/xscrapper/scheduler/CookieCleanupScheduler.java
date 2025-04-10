@@ -9,7 +9,6 @@ import pl.bgnat.master.xscrapper.utils.CookieUtils;
 @Data
 public class CookieCleanupScheduler {
 
-    // Co 24 godziny (86,400,000 ms)
     @Scheduled(cron = "0 0 0 */2 * *")
     public void cleanCookiesDaily() {
         log.info("Rozpoczynam czyszczenie plików ciasteczek...");

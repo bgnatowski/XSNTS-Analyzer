@@ -2,6 +2,7 @@ package pl.bgnat.master.xscrapper.pages;
 
 import lombok.extern.slf4j.Slf4j;
 import org.openqa.selenium.*;
+import pl.bgnat.master.xscrapper.dto.UserCredential;
 import pl.bgnat.master.xscrapper.model.Tweet;
 
 import java.time.LocalDateTime;
@@ -16,27 +17,29 @@ import static pl.bgnat.master.xscrapper.utils.WaitUtils.waitRandom;
 @Slf4j
 public class WallPage extends BasePage {
     private static final int MAX_TWEETS_PER_SCRAPE = 1000;
+    private final UserCredential.User user;
 
     public enum WallType {
         FOR_YOU, POPULAR, LATEST
     }
 
-    public WallPage(WebDriver driver) {
+    public WallPage(WebDriver driver, UserCredential.User user) {
         super(driver);
-        zoomOutAndReturn();
+        this.user = user;
     }
 
     public void openForYou(){
+        log.info("Otwieram for you dla uzytkownika: {}", user);
         openSubPage("/home");
     }
 
     public void openPopular(String keyword){
-        log.info("Otwieram trendujacy tag: {}", keyword);
+        log.info("Otwieram trendujacy tag: {}, popularne, dla uzytkownika: {}", keyword, user);
         navigateRandomly(keyword);
     }
 
     public void openLatest(String keyword){
-        log.info("Otwieram trendujacy tag: {}, najnowsze", keyword);
+        log.info("Otwieram trendujacy tag: {}, najnowsze, dla uzytkownika: {}", keyword, user);
         navigateRandomlyToLatest(keyword);
     }
 
@@ -50,8 +53,7 @@ public class WallPage extends BasePage {
                     break;
                 }
 
-                long lastHeight = scrollToBottom();
-                waitRandom();
+                long lastHeight = smartScroll();
 
                 List<WebElement> scrappedTweetElements = getTweetElements();
                 if (!scrappedTweetElements.isEmpty()) {
@@ -70,19 +72,20 @@ public class WallPage extends BasePage {
                     log.info("Nie znaleziono tweetów przy scrollowaniu. Ponawiam petle.");
                 }
 
-                if(repeatedBottom > 5){
-                    log.info("Tweety się nie ładują przez 5 odswiezen. Przerywam petle.");
-                    break;
-                }
-
-                long newHeight = scrollToBottom();
-                if (newHeight != lastHeight) {
-                    lastHeight = newHeight;
-                } else {
-                    log.info("Tweety się nie ładują. Osiągnięto bottom strony. Refreshuje");
-                    repeatedBottom++;
+                if(repeatedBottom > 3){
+                    log.info("Tweety się nie ładują przez 3 petle");
                     refreshPage();
                 }
+                if (repeatedBottom > 5) break;
+
+                long newHeight = smartScroll();
+                if (newHeight == lastHeight) {
+                    log.info("Tweety się nie ładują. Osiągnięto bottom strony");
+                    repeatedBottom++;
+                } else {
+                    lastHeight = newHeight;
+                }
+
             } catch (Exception e) {
                 refreshPage();
                 log.warn("Wystąpił błąd przy scrapowaniu tweetów; Odświeżam stronę.");
