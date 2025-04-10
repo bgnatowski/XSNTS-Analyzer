@@ -6,7 +6,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.springframework.stereotype.Service;
 import pl.bgnat.master.xscrapper.config.CredentialProperties;
-import pl.bgnat.master.xscrapper.driver.DriverFactory;
 import pl.bgnat.master.xscrapper.model.Tweet;
 import pl.bgnat.master.xscrapper.model.UserCredential;
 import pl.bgnat.master.xscrapper.model.UserCredential.User;
@@ -23,7 +22,7 @@ import java.util.concurrent.TimeUnit;
 
 import static pl.bgnat.master.xscrapper.model.UserCredential.User.USER_1;
 import static pl.bgnat.master.xscrapper.model.UserCredential.User.USER_3;
-import static pl.bgnat.master.xscrapper.pages.WallPage.WallType.*;
+import static pl.bgnat.master.xscrapper.pages.WallPage.WallType.LATEST;
 import static pl.bgnat.master.xscrapper.utils.WaitUtils.waitRandom;
 
 @Service
@@ -31,7 +30,7 @@ import static pl.bgnat.master.xscrapper.utils.WaitUtils.waitRandom;
 @Slf4j
 public class ScrapperService {
     private final TweetService tweetService;
-    private final DriverFactory driverFactory;
+    private final DolphinAntyService dolphinAntyService;
     private final CredentialProperties credentialProperties;
 
     private List<String> currentTrendingKeyword;
@@ -81,8 +80,7 @@ public class ScrapperService {
     }
 
     private void scrapeForYou(User user) {
-        String proxyForUser = credentialProperties.getProxyForUser(user);
-        ChromeDriver userDriver = driverFactory.createDriverWithAuthProxy(proxyForUser);
+        ChromeDriver userDriver =dolphinAntyService.getDriverForUser(user);
 
         LoginPage loginPage = new LoginPage(userDriver, credentialProperties);
         loginPage.loginIfNeeded(user);
@@ -98,11 +96,10 @@ public class ScrapperService {
         wallPage.exit();
     }
 
-    @PostConstruct
+    //    @PostConstruct
     public void scheduledScrapeTrendingKeywords() {
         do {
-            String proxyIpPort = credentialProperties.getProxyForUser(USER_1);
-            ChromeDriver trendingDriver = driverFactory.createDriverWithAuthProxy(proxyIpPort);
+            ChromeDriver trendingDriver = dolphinAntyService.getDriverForUser(USER_1);
 
             LoginPage loginPage = new LoginPage(trendingDriver, credentialProperties);
             loginPage.loginIfNeeded(USER_1);
@@ -117,6 +114,40 @@ public class ScrapperService {
 
         scrapeTrendingWall(LATEST);
         waitRandom();
+    }
+
+    @PostConstruct
+    private void scrapeTrendingWallTest() {
+        String keyword = "Vinted";
+        WallType wallType = WallType.LATEST;
+        try {
+            User user = User.USER_2;
+            ChromeDriver trendDriver = dolphinAntyService.getDriverForUser(user);
+
+            LoginPage loginPage = new LoginPage(trendDriver, credentialProperties);
+            loginPage.loginIfNeeded(user);
+//
+            String usedUsername = credentialProperties.getCredentials().get(user.ordinal()).username();
+            log.info("Dla keyword: {} używam credentials użytkownika: {}", keyword, usedUsername);
+//
+//            WallPage wallPage = new WallPage(trendDriver);
+//
+//            switch (wallType) {
+//                case POPULAR -> wallPage.openPopular(keyword);
+//                case LATEST -> wallPage.openLatest(keyword);
+//            }
+//
+//            Set<Tweet> scrappedTweets = wallPage.scrapeTweets();
+//
+//            tweetService.saveTweets(scrappedTweets);
+//            waitRandom();
+
+            log.info("Zamykam keyword: {}", keyword);
+//            wallPage.exit();
+        } catch (Exception e) {
+            log.error("Błąd przy przetwarzaniu keyworda: {}", keyword);
+        }
+
     }
 
     private void scrapeTrendingWall(WallType wallType) {
@@ -136,8 +167,7 @@ public class ScrapperService {
                     Thread.currentThread().setName(formattedThreadName);
 
                     User user = UserCredential.getUser(userIndex);
-                    String proxyForUser = credentialProperties.getProxyForUser(user);
-                    ChromeDriver trendDriver = driverFactory.createDriverWithAuthProxy(proxyForUser);
+                    ChromeDriver trendDriver = dolphinAntyService.getDriverForUser(user);
 
                     LoginPage loginPage = new LoginPage(trendDriver, credentialProperties);
                     loginPage.loginIfNeeded(user);

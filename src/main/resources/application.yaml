@@ -50,3 +50,10 @@ x:
         port: *proxy-port
         username: *proxy-username
         password: *proxy-password
+
+gologin:
+  token: "twój_token_API_z_GoLogin"  # Uzyskaj z https://app.gologin.com/personalArea/TokenApi
+  profiles:
+    USER_2: "twoje_ID_profilu_2"    # ID profilu (nie nazwa)
+    USER_3: "twoje_ID_profilu_3"    # ID profilu widoczne w URL
+    USER_4: "twoje_ID_profilu_4"    # np. https://app.gologin.com/profile/62c4fb1c2c61be2d32c53683
