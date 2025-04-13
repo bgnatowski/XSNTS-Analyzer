@@ -15,10 +15,7 @@ import pl.bgnat.master.xscrapper.dto.AdsPowerResponse;
 import pl.bgnat.master.xscrapper.dto.BrowserStatusData;
 import pl.bgnat.master.xscrapper.dto.WebSocketInfo;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static pl.bgnat.master.xscrapper.dto.UserCredential.User;
@@ -32,13 +29,20 @@ public class AdsPowerService {
     private static final String BROWSER_ACTIVE_STATUS = "Active";
     private static final String WEBDRIVER_PROPERTY = "webdriver.chrome.driver";
 
+    // Stałe dla mechanizmu ponownych prób
+    private static final int MAX_RETRIES = 3;
+    private static final long RETRY_DELAY_MS = 5000; // 5 sekund
+
+    // Blokada do synchronizacji uruchamiania przeglądarek
+    private final Object browserStartLock = new Object();
+
     private final AdsPowerProperties properties;
     private final RestTemplate restTemplate;
     private final Map<String, ChromeDriver> runningDrivers = new ConcurrentHashMap<>();
 
     public ChromeDriver getDriverForUser(User user) {
         return Optional.ofNullable(properties.getUserIds().get(user.name()))
-                .map(this::getDriverById)
+                .map(this::getDriverByIdWithRetry)
                 .orElseGet(() -> {
                     log.error("Nie znaleziono ID AdsPower dla użytkownika: {}", user);
                     return null;
@@ -71,19 +75,57 @@ public class AdsPowerService {
         }
     }
 
-    private ChromeDriver getDriverById(String userId) {
-        if (runningDrivers.containsKey(userId)) {
+    private ChromeDriver getDriverByIdWithRetry(String userId) {
+        ChromeDriver existingDriver = runningDrivers.get(userId);
+        if (existingDriver != null) {
             log.info("Używam istniejącego drivera dla ID: {}", userId);
-            return runningDrivers.get(userId);
+            return existingDriver;
         }
 
-        return checkBrowserStatus(userId)
-                .filter(browser -> browser.status().equals(BROWSER_ACTIVE_STATUS))
-                .map(browser -> {
-                    log.info("Znaleziono aktywną przeglądarkę dla ID: {}", userId);
-                    return connectToExistingBrowser(userId, browser);
-                })
-                .orElseGet(() -> startNewBrowser(userId));
+        for (int attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+            try {
+                log.info("Próba uruchomienia przeglądarki dla ID: {} (próba {}/{})", userId, attempt, MAX_RETRIES);
+
+                synchronized (browserStartLock) {
+                    existingDriver = runningDrivers.get(userId);
+                    if (existingDriver != null) {
+                        log.info("Driver został już utworzony przez inny wątek dla ID: {}", userId);
+                        return existingDriver;
+                    }
+
+                    Optional<BrowserStatusData> browserStatus = checkBrowserStatus(userId);
+                    if (browserStatus.isPresent() && BROWSER_ACTIVE_STATUS.equals(browserStatus.get().status())) {
+                        log.info("Znaleziono aktywną przeglądarkę dla ID: {}", userId);
+                        return connectToExistingBrowser(userId, browserStatus.get());
+                    }
+
+                    ChromeDriver driver = startNewBrowser(userId);
+                    if (driver != null) {
+                        return driver;
+                    }
+                }
+                if (attempt < MAX_RETRIES) {
+                    log.info("Oczekiwanie {} ms przed ponowną próbą dla ID: {}", RETRY_DELAY_MS, userId);
+                    Thread.sleep(RETRY_DELAY_MS);
+                }
+            } catch (Exception e) {
+                log.error("Błąd podczas uruchamiania przeglądarki dla ID: {} (próba {}/{}): {}",
+                        userId, attempt, MAX_RETRIES, e.getMessage());
+
+                if (attempt < MAX_RETRIES) {
+                    try {
+                        log.info("Oczekiwanie {} ms przed ponowną próbą dla ID: {}", RETRY_DELAY_MS, userId);
+                        Thread.sleep(RETRY_DELAY_MS);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        return null;
+                    }
+                }
+
+            }
+        }
+        log.error("Nie udało się uruchomić przeglądarki po {} próbach dla ID: {}", MAX_RETRIES, userId);
+        return null;
     }
 
     private Optional<BrowserStatusData> checkBrowserStatus(String userId) {
@@ -93,7 +135,8 @@ public class AdsPowerService {
                     url,
                     HttpMethod.GET,
                     null,
-                    new ParameterizedTypeReference<>() {}
+                    new ParameterizedTypeReference<>() {
+                    }
             );
 
             return Optional.ofNullable(response.getBody())
@@ -134,7 +177,8 @@ public class AdsPowerService {
                     url,
                     HttpMethod.GET,
                     null,
-                    new ParameterizedTypeReference<>() {}
+                    new ParameterizedTypeReference<>() {
+                    }
             );
 
             return Optional.ofNullable(response.getBody())
@@ -170,6 +214,8 @@ public class AdsPowerService {
         Optional.ofNullable(runningDrivers.get(userId))
                 .ifPresent(driver -> {
                     try {
+                        closeAllTabsExceptCurrent(driver);
+
                         driver.quit();
 
                         String url = BASE_URL + "stop?user_id=" + userId;
@@ -182,6 +228,7 @@ public class AdsPowerService {
                     }
                 });
     }
+
 
     private void connectToActiveBrowsers(List<Map<String, Object>> browsers) {
         browsers.stream()
@@ -205,4 +252,30 @@ public class AdsPowerService {
                 webdriverPath
         );
     }
+
+    private void closeAllTabsExceptCurrent(ChromeDriver driver) {
+        try {
+            String currentWindowHandle = driver.getWindowHandle();
+
+            Set<String> windowHandles = driver.getWindowHandles();
+
+            if (windowHandles.size() > 1) {
+                log.info("Znaleziono {} dodatkowych kart do zamknięcia", windowHandles.size() - 1);
+
+                for (String windowHandle : windowHandles) {
+                    if (!windowHandle.equals(currentWindowHandle)) {
+                        driver.switchTo().window(windowHandle);
+                        driver.close();
+                    }
+                }
+
+                driver.switchTo().window(currentWindowHandle);
+
+                log.info("Zamknięto wszystkie dodatkowe karty przeglądarki");
+            }
+        } catch (Exception e) {
+            log.error("Błąd podczas zamykania dodatkowych kart: {}", e.getMessage());
+        }
+    }
+
 }

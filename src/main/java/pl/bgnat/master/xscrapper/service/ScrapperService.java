@@ -14,11 +14,14 @@ import pl.bgnat.master.xscrapper.pages.TrendingPage;
 import pl.bgnat.master.xscrapper.pages.WallPage;
 import pl.bgnat.master.xscrapper.pages.WallPage.WallType;
 
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static pl.bgnat.master.xscrapper.dto.UserCredential.User.*;
 import static pl.bgnat.master.xscrapper.pages.WallPage.WallType.*;
@@ -115,7 +118,94 @@ public class ScrapperService {
         waitRandom();
     }
 
-//    @PostConstruct
+    private void scrapeTrendingWall(WallType wallType) {
+        int credentialCount = UserCredential.SIZE;
+
+        Queue<String> keywordsQueue = new LinkedList<>(currentTrendingKeyword);
+
+        ExecutorService executor = Executors.newFixedThreadPool(credentialCount);
+
+        AtomicInteger counter = new AtomicInteger(0);
+
+        while (!keywordsQueue.isEmpty()) {
+            String keyword = keywordsQueue.poll();
+            int currentCounter = counter.incrementAndGet();
+
+            executor.submit(() -> {
+                String originalName = Thread.currentThread().getName();
+
+                int userIndex = (currentCounter - 1) % credentialCount;
+                User user = UserCredential.getUser(userIndex);
+
+                ChromeDriver trendDriver = null;
+
+                try {
+                    String formattedThreadName = getFormattedThreadName(keyword, userIndex, currentCounter);
+                    Thread.currentThread().setName(formattedThreadName);
+
+                    log.info("Rozpoczynam przetwarzanie trendu: {} dla użytkownika: {}", keyword, user);
+
+                    trendDriver = adsPowerService.getDriverForUser(user);
+
+                    if (trendDriver == null) {
+                        log.error("Nie udało się uzyskać przeglądarki dla użytkownika: {} i trendu: {}", user, keyword);
+                        return;
+                    }
+
+                    LoginPage loginPage = new LoginPage(trendDriver, credentialProperties);
+                    loginPage.loginIfNeeded(user);
+
+                    WallPage wallPage = new WallPage(trendDriver, user);
+
+                    switch (wallType) {
+                        case POPULAR -> wallPage.openPopular(keyword);
+                        case LATEST -> wallPage.openLatest(keyword);
+                    }
+
+                    Set<Tweet> scrappedTweets = wallPage.scrapeTweets();
+                    tweetService.saveTweets(scrappedTweets);
+
+                    log.info("Zakończono przetwarzanie trendu: {} dla użytkownika: {}", keyword, user);
+                } catch (Exception e) {
+                    log.error("Błąd przy przetwarzaniu trendu: {} dla użytkownika: {}. ErrorMsg: {}",
+                            keyword, user, e.getMessage());
+                } finally {
+                    try {
+                        if (trendDriver != null) {
+                            adsPowerService.stopDriver(user);
+                        }
+                    } catch (Exception e) {
+                        log.error("Błąd podczas zatrzymywania przeglądarki dla użytkownika: {}: {}",
+                                user, e.getMessage());
+                    }
+
+                    Thread.currentThread().setName(originalName);
+                    log.info("Zamykam trendujacy tag: {}", keyword);
+                }
+            });
+
+            // Dodaj małe opóźnienie między zadaniami, aby zapobiec przeciążeniu API AdsPower
+            try {
+                Thread.sleep(2000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
+            }
+        }
+
+        executor.shutdown();
+        try {
+            if (!executor.awaitTermination(4, TimeUnit.HOURS)) {
+                executor.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            executor.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
+    }
+
+
+    //    @PostConstruct
     private void scrapeOneByKeyword() {
         String keyword = "Smolensku";
         WallType wallType = LATEST;
@@ -146,7 +236,7 @@ public class ScrapperService {
 
     }
 
-    private void scrapeTrendingWall(WallType wallType) {
+    private void scrapeTrendingWallOld(WallType wallType) {
         int credentialCount = UserCredential.SIZE;
         int index = 0;
 
