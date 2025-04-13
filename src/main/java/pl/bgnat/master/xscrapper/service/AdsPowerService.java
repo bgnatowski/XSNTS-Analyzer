@@ -29,11 +29,9 @@ public class AdsPowerService {
     private static final String BROWSER_ACTIVE_STATUS = "Active";
     private static final String WEBDRIVER_PROPERTY = "webdriver.chrome.driver";
 
-    // Stałe dla mechanizmu ponownych prób
     private static final int MAX_RETRIES = 3;
     private static final long RETRY_DELAY_MS = 5000; // 5 sekund
 
-    // Blokada do synchronizacji uruchamiania przeglądarek
     private final Object browserStartLock = new Object();
 
     private final AdsPowerProperties properties;
@@ -185,7 +183,7 @@ public class AdsPowerService {
                     .filter(body -> body.code() == SUCCESS_CODE && body.data() != null)
                     .map(body -> createDriverFromBrowserData(userId, body.data()))
                     .orElseGet(() -> {
-                        log.error("Nie udało się uruchomić przeglądarki AdsPower: {}, dla usera: {}", response.getBody(), userId);
+                        log.error("Nie udało się uruchomić przeglądarki AdsPower dla usera: {}. Msg: '{}'", userId, response.getBody().msg());
                         return null;
                     });
         } catch (Exception e) {

@@ -1,4 +1,4 @@
 package pl.bgnat.master.xscrapper.dto;
 
-public record AdsPowerResponse<T> (int code, T data, String message) {
+public record AdsPowerResponse<T> (int code, T data, String msg) {
 }
