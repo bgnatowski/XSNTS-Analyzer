@@ -72,11 +72,11 @@ public class WallPage extends BasePage {
                     log.info("Nie znaleziono tweetów przy scrollowaniu. Ponawiam petle.");
                 }
 
-                if(repeatedBottom > 3){
+                if(repeatedBottom > 6){
                     log.info("Tweety się nie ładują przez 3 petle");
                     refreshPage();
                 }
-                if (repeatedBottom > 5) break;
+                if (repeatedBottom > 10) break;
 
                 long newHeight = smartScroll();
                 if (newHeight == lastHeight) {
