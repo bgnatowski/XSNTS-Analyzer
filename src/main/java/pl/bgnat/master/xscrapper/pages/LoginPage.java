@@ -19,7 +19,6 @@ public class LoginPage extends BasePage {
     public LoginPage(WebDriver driver, CredentialProperties credentialProperties) {
         super(driver);
         this.credentialProperties = credentialProperties;
-        zoomOutAndReturn();
     }
 
     public void loginIfNeeded(User user) {

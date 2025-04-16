@@ -24,6 +24,7 @@ public abstract class BasePage {
     public BasePage(WebDriver driver) {
         this.driver = driver;
         this.driver.manage().window().maximize();
+        zoomOutAndReturn();
     }
 
     public void exit() {
