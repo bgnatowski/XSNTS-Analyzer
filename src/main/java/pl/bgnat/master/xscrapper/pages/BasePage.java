@@ -143,16 +143,15 @@ public abstract class BasePage {
         if (useSendKeys) {
             log.info("Nawigacja za pomocą sendKeys do: {}", keyword);
             try {
+                waitRandom();
                 WebElement searchBox = waitForElement(By.xpath("//input[@data-testid='SearchBox_Search_Input']"));
-                searchBox.sendKeys(keyword);
-                searchBox.sendKeys(Keys.ENTER);
 
                 for (char c : keyword.toCharArray()) {
                     searchBox.sendKeys(String.valueOf(c));
                     waitRandom(50, 150);
                 }
 
-                waitRandom(300, 800);
+                waitRandom();
                 searchBox.sendKeys(Keys.ENTER);
             } catch (Exception e) {
                 log.warn("Błąd przy użyciu sendKeys, przechodzę do metody zapasowej: {}", e.getMessage());
