@@ -19,6 +19,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static pl.bgnat.master.xscrapper.dto.UserCredential.User.USER_1;
 import static pl.bgnat.master.xscrapper.pages.WallPage.WallType.LATEST;
 import static pl.bgnat.master.xscrapper.pages.WallPage.WallType.POPULAR;
 import static pl.bgnat.master.xscrapper.utils.WaitUtils.waitRandom;
@@ -72,7 +73,7 @@ public class ScrapperService {
         }
     }
 
-    @PostConstruct
+//    @PostConstruct
     public void scheduledScrapePopularKeywords() {
         do {
             updateTrendingKeywords();
@@ -80,6 +81,36 @@ public class ScrapperService {
 
         scrapeTrendingWall(POPULAR);
         waitRandom();
+    }
+
+    @PostConstruct
+    private void scrapeOneByKeyword() {
+        String keyword = "Sabotażysta";
+        WallType wallType = POPULAR;
+        User user = USER_1;
+        WallPage wallPage;
+        try {
+            ChromeDriver trendDriver = adsPowerService.getDriverForUser(user);
+
+            LoginPage loginPage = new LoginPage(trendDriver, credentialProperties);
+            loginPage.loginIfNeeded(user);
+
+            wallPage = new WallPage(trendDriver, user);
+
+            switch (wallType) {
+                case POPULAR -> wallPage.openPopular(keyword);
+                case LATEST -> wallPage.openLatest(keyword);
+            }
+
+            Set<Tweet> scrappedTweets = wallPage.scrapeTweets();
+
+            tweetService.saveTweets(scrappedTweets);
+            waitRandom();
+        } catch (Exception e) {
+            log.error("Błąd przy przetwarzaniu keyworda: {}", keyword);
+        } finally {
+            adsPowerService.stopDriver(user);
+        }
     }
 
     private void scrapeForYou(User user) {
