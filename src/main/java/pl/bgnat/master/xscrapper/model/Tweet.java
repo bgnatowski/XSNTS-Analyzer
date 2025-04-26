@@ -24,6 +24,7 @@ import java.util.Objects;
                 )
         })
 public class Tweet {
+    public static final Tweet POISON_PILL = new Tweet();
     @Id
     @SequenceGenerator(
             name = "tweet_id_generator",
@@ -46,6 +47,8 @@ public class Tweet {
     private Long repostCount;
     @Column(name = "comment_count")
     private Long commentCount;
+    @Column(name = "views")
+    private Long views;
 
     @Column(name = "media_links")
     private String mediaLinks;      // linki do zdjęć/gifów/nagrań (opcjonalnie w formie JSON lub rozbijać w osobnej tabeli do przemyslenia)
