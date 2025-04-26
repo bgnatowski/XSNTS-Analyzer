@@ -5,6 +5,7 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.WebElement;
 import org.springframework.util.StringUtils;
+import pl.bgnat.master.xscrapper.dto.Metrics;
 
 import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
@@ -15,10 +16,23 @@ import java.util.regex.Pattern;
 
 @Slf4j
 public class TweetParser {
+    private static final By METRICS_GROUP_XPATH = By.xpath("//div[@role='group' and @aria-label]");
+    private static final By POST_LINK_XPATH = By.xpath(".//a[contains(@href, '/status/')]/time/parent::a");
+    private static final By POST_DATE_XPATH = By.xpath(".//a[contains(@href, '/status/')]/time");
+    private static final By CONTENT_XPATH = By.xpath(".//div[@data-testid='tweetText']");
+    private static final By USERNAME_DIV_XPATH = By.xpath(".//div[@data-testid='User-Name']");
+    private static final By USERNAME_XPATH = By.xpath(".//span[contains(text(), '@')]");
+
+    private static final Pattern REPLIES_PATTERN = Pattern.compile("(\\d+) (replies|reply)", Pattern.CASE_INSENSITIVE);
+    private static final Pattern REPOSTS_PATTERN = Pattern.compile("(\\d+) (reposts|repost)", Pattern.CASE_INSENSITIVE);
+    private static final Pattern LIKES_PATTERN = Pattern.compile("(\\d+) (likes|like)", Pattern.CASE_INSENSITIVE);
+    private static final Pattern VIEWS_PATTERN = Pattern.compile("(\\d+) (views|view)", Pattern.CASE_INSENSITIVE);
+
+
     public static String parseUsername(WebElement tweetElement) {
         try {
-            WebElement userNameDiv = tweetElement.findElement(By.xpath(".//div[@data-testid='User-Name']"));
-            WebElement handleSpan = userNameDiv.findElement(By.xpath(".//span[contains(text(), '@')]"));
+            WebElement userNameDiv = tweetElement.findElement(USERNAME_DIV_XPATH);
+            WebElement handleSpan = userNameDiv.findElement(USERNAME_XPATH);
 
             return handleSpan.getText();
         } catch (NoSuchElementException e) {
@@ -28,7 +42,7 @@ public class TweetParser {
 
     public static String parseTweetContent(WebElement tweetElement) {
         try {
-            WebElement contentEl = tweetElement.findElement(By.xpath(".//div[@data-testid='tweetText']"));
+            WebElement contentEl = tweetElement.findElement(CONTENT_XPATH);
             return contentEl.getText();
         } catch (NoSuchElementException e) {
             return null;
@@ -37,10 +51,10 @@ public class TweetParser {
 
     public static String parsePostLink(WebElement tweetElement) {
         try {
-            WebElement timeEl = tweetElement.findElement(By.xpath(".//a[contains(@href, '/status/')]/time/parent::a"));
-            String rawHref = timeEl.getDomAttribute("href");
+            WebElement postLink = tweetElement.findElement(POST_LINK_XPATH);
+            String rawHref = postLink.getDomAttribute("href");
 
-            if(!StringUtils.hasLength(rawHref)){
+            if (!StringUtils.hasLength(rawHref)) {
                 log.warn("rawHref jest pusty");
                 return null;
             }
@@ -57,11 +71,11 @@ public class TweetParser {
     public static LocalDateTime parsePostDate(WebElement tweetElement) {
         String dateTimeStr = null;
         try {
-            WebElement timeEl = tweetElement.findElement(By.xpath(".//a[contains(@href, '/status/')]/time"));
+            WebElement timeEl = tweetElement.findElement(POST_DATE_XPATH);
             // Przykład: "2025-01-03T14:26:29.000Z"
             dateTimeStr = timeEl.getDomAttribute("datetime");
 
-            if(!StringUtils.hasLength(dateTimeStr)) {
+            if (!StringUtils.hasLength(dateTimeStr)) {
                 log.warn("dateTimeStr jest pusty");
                 return null;
             }
@@ -76,55 +90,25 @@ public class TweetParser {
         }
     }
 
-    public static Long parseCountFromAriaLabel(WebElement tweetElement, String dataTestId) {
+    public static Metrics getMetricsForTweet(WebElement tweetElement) {
         try {
-            WebElement button = tweetElement.findElement(By.xpath(".//button[@data-testid='" + dataTestId + "']"));
+            WebElement group = tweetElement.findElement(METRICS_GROUP_XPATH);
+            String aria = group.getAttribute("aria-label");
 
-            String ariaLabel = button.getDomAttribute("aria-label");
-            if (!StringUtils.hasLength(ariaLabel)) {
-                return 0L;
-            }
+            long replies = findMetricNumber(REPLIES_PATTERN, aria);
+            long reposts = findMetricNumber(REPOSTS_PATTERN, aria);
+            long likes = findMetricNumber(LIKES_PATTERN, aria);
+            long views = findMetricNumber(VIEWS_PATTERN, aria);
 
-            return parseExactNumberFromAriaLabel(ariaLabel);
+            return new Metrics(replies, reposts, likes, views);
         } catch (NoSuchElementException e) {
-            return 0L;
+            log.warn("Metrics group not found", e);
+            return Metrics.empty();
         }
     }
 
-    private static Long parseExactNumberFromAriaLabel(String ariaLabel) {
-        if (ariaLabel == null) {
-            return 0L;
-        }
-
-        String text = ariaLabel.toLowerCase().replace("\u00A0", " ");
-        text = text.replaceAll(",", ".");
-
-        //  - grupa liczbowa (\d+(\.\d+)?) -> np. 2, 2.5, 2395
-        //  - (?:\s*tys\.?)? -> "opcjonalnie spacja + tys.
-        // np. "2 tys." -> dopasuje "2 tys."
-        //     "3.5 tys." -> "3.5 tys."
-        //     "2395 polubień" -> "2395"
-        Pattern pattern = Pattern.compile("(\\d+(\\.\\d+)?)(\\s*tys\\.?)?");
-        Matcher matcher = pattern.matcher(text);
-
-        if (matcher.find()) {
-            String numberPart = matcher.group(1);    // np. "2" lub "2.5" lub "2395"
-            String tysPart    = matcher.group(3);    // np. " tys." albo null
-
-            double value;
-            try {
-                value = Double.parseDouble(numberPart);
-            } catch (NumberFormatException e) {
-                return 0L;
-            }
-
-            // Jeśli jest "tys." -> pomnóż x 1000
-            if (tysPart != null && !tysPart.isBlank()) {
-                value = value * 1000;
-            }
-
-            return Math.round(value);
-        }
-        return 0L;
+    private static long findMetricNumber(Pattern p, String text) {
+        Matcher m = p.matcher(text);
+        return m.find() ? Long.parseLong(m.group(1)) : 0L;
     }
 }
