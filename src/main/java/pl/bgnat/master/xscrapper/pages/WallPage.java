@@ -2,6 +2,7 @@ package pl.bgnat.master.xscrapper.pages;
 
 import lombok.extern.slf4j.Slf4j;
 import org.openqa.selenium.*;
+import pl.bgnat.master.xscrapper.dto.Metrics;
 import pl.bgnat.master.xscrapper.dto.UserCredential;
 import pl.bgnat.master.xscrapper.model.Tweet;
 
@@ -16,7 +17,7 @@ import static pl.bgnat.master.xscrapper.utils.WaitUtils.waitRandom;
 
 @Slf4j
 public class WallPage extends BasePage {
-    private static final int MAX_TWEETS_PER_SCRAPE = 1000;
+    private static final int MAX_TWEETS_PER_SCRAPE = 500;
     private final UserCredential.User user;
 
     public enum WallType {
@@ -73,7 +74,7 @@ public class WallPage extends BasePage {
                 }
 
                 if(repeatedBottom > 6){
-                    log.info("Tweety się nie ładują przez 3 petle");
+                    log.info("Tweety się nie ładują przez 6 petli. Refresh");
                     refreshPage();
                 }
                 if (repeatedBottom > 10) break;
@@ -112,14 +113,11 @@ public class WallPage extends BasePage {
         LocalDateTime postDate = parsePostDate(tweetElement);
         tweet.setPostDate(postDate);
 
-        Long commentCount = parseCountFromAriaLabel(tweetElement, "reply");
-        tweet.setCommentCount(commentCount);
-
-        Long repostCount = parseCountFromAriaLabel(tweetElement, "retweet");
-        tweet.setRepostCount(repostCount);
-
-        Long likeCount = parseCountFromAriaLabel(tweetElement, "like");
-        tweet.setLikeCount(likeCount);
+        Metrics m = getMetricsForTweet(tweetElement);
+        tweet.setCommentCount(m.getReplies());
+        tweet.setRepostCount(m.getReposts());
+        tweet.setLikeCount(m.getLikes());
+        tweet.setViews(m.getViews());
 
         LocalDateTime now = LocalDateTime.now();
         tweet.setCreationDate(now);
@@ -150,8 +148,7 @@ public class WallPage extends BasePage {
     private void clickNewPostsButtonIfExists() {
         try {
             By newPostsButtonLocator = By.xpath("//button[.//div[@data-testid='pillLabel']]");
-            WebElement newPostsButton = findElement(newPostsButtonLocator);
-//            log.info("Szukam przycisku 'See new posts'.");
+            WebElement newPostsButton = waitForElement(newPostsButtonLocator);
             if (newPostsButton != null && newPostsButton.isDisplayed() && newPostsButton.isEnabled()) {
                 newPostsButton.click();
                 log.info("Kliknięto przycisk 'See new posts'.");
