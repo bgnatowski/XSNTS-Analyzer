@@ -11,8 +11,8 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class WaitUtils {
-    private static final int MIN_WAIT_MILLIS = 3000;
-    private static final int MAX_WAIT_MILLIS = 10000;
+    private static final int MIN_WAIT_MILLIS = 2000;
+    private static final int MAX_WAIT_MILLIS = 5000;
 
     public static WebElement waitForElement(WebDriver driver, By locator) {
         int randomWaitSeconds = ThreadLocalRandom.current().nextInt(MIN_WAIT_MILLIS, MAX_WAIT_MILLIS + 1);
