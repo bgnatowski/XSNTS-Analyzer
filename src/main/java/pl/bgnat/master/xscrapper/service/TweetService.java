@@ -2,6 +2,7 @@ package pl.bgnat.master.xscrapper.service;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.openqa.selenium.NotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import pl.bgnat.master.xscrapper.dto.TweetDto;
@@ -11,6 +12,7 @@ import pl.bgnat.master.xscrapper.repository.TweetRepository;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 
 @Service
@@ -37,11 +39,11 @@ public class TweetService {
         log.info("Zapisano: {} tweetow do bazy z {} zescrapowanych. Ilość powtórzeń: {}", tweetsList.size(), scrappedTweets.size(), repeatCount);
     }
 
-    private TweetDto saveTweet(Tweet tweet){
-        log.info("Start saveTweet");
-        if(!StringUtils.hasLength(tweet.getLink()))
-            return null;
+    public Optional<Tweet> findTweetById(Long tweetId) {
+        return tweetRepository.findById(tweetId);
+    }
 
+    public TweetDto saveTweet(Tweet tweet){
         Tweet saved = tweetRepository.save(tweet);
         return TweetMapper.INSTANCE.toDto(saved);
     }
@@ -49,16 +51,5 @@ public class TweetService {
     private boolean isExists(Tweet tweetObj) {
         String link = tweetObj.getLink();
         return tweetRepository.existsTweetByLink(link);
-    }
-
-    private void updateTweet(Tweet tweetObj) {
-        String link = tweetObj.getLink();
-        Tweet existingTweet = tweetRepository.findByLink(link);
-        existingTweet.setContent(tweetObj.getContent());
-        existingTweet.setLikeCount(tweetObj.getLikeCount());
-        existingTweet.setRepostCount(tweetObj.getRepostCount());
-        existingTweet.setCommentCount(tweetObj.getCommentCount());
-        existingTweet.setUpdateDate(LocalDateTime.now());
-        tweetRepository.save(tweetObj);
     }
 }

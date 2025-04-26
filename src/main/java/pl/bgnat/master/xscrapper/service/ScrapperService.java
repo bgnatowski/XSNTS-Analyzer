@@ -4,6 +4,7 @@ import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.openqa.selenium.chrome.ChromeDriver;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import pl.bgnat.master.xscrapper.config.CredentialProperties;
 import pl.bgnat.master.xscrapper.dto.UserCredential;
@@ -19,7 +20,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static pl.bgnat.master.xscrapper.dto.UserCredential.User.USER_1;
+import static pl.bgnat.master.xscrapper.dto.UserCredential.User.USER_2;
 import static pl.bgnat.master.xscrapper.pages.WallPage.WallType.LATEST;
 import static pl.bgnat.master.xscrapper.pages.WallPage.WallType.POPULAR;
 import static pl.bgnat.master.xscrapper.utils.WaitUtils.waitRandom;
@@ -35,13 +36,12 @@ public class ScrapperService {
 
     private List<String> currentTrendingKeyword = new ArrayList<>();
 
-    //    @Scheduled(cron = "0 0 */6 * * *")
     public void scheduledScrapeForYouWallAsync() {
-        int credentialCount = UserCredential.SIZE;
+        int credentialCount = 5;
         int index = 0;
 
         ExecutorService executor = Executors.newFixedThreadPool(credentialCount);
-        for (User user : UserCredential.User.values()) {
+        for (User user : User.values()) {
             final int userIndex = index % credentialCount;
             final int keywordIndex = index + 1;
             index++;
@@ -73,6 +73,7 @@ public class ScrapperService {
         }
     }
 
+//    @Scheduled(cron = "0 0 */3 * * *")
 //    @PostConstruct
     public void scheduledScrapePopularKeywords() {
         do {
@@ -83,14 +84,25 @@ public class ScrapperService {
         waitRandom();
     }
 
-    @PostConstruct
+//    @Scheduled(cron = "0 0 */4 * * *")
+    public void scheduledScrapeLatestKeywords() {
+        do {
+            updateTrendingKeywords();
+        } while (currentTrendingKeyword.isEmpty());
+
+        scrapeTrendingWall(LATEST);
+        waitRandom();
+    }
+
+//    @PostConstruct
     private void scrapeOneByKeyword() {
-        String keyword = "Sabotażysta";
-        WallType wallType = POPULAR;
-        User user = USER_1;
+        String keyword = "konklawa";
+        WallType wallType = LATEST;
+        User user = USER_2;
         WallPage wallPage;
+        ChromeDriver trendDriver = null;
         try {
-            ChromeDriver trendDriver = adsPowerService.getDriverForUser(user);
+            trendDriver = adsPowerService.getDriverForUser(user);
 
             LoginPage loginPage = new LoginPage(trendDriver, credentialProperties);
             loginPage.loginIfNeeded(user);
@@ -109,7 +121,14 @@ public class ScrapperService {
         } catch (Exception e) {
             log.error("Błąd przy przetwarzaniu keyworda: {}", keyword);
         } finally {
-            adsPowerService.stopDriver(user);
+            try {
+                if (trendDriver != null) {
+                    adsPowerService.stopDriver(user);
+                }
+            } catch (Exception e) {
+                log.error("Błąd podczas zatrzymywania przeglądarki dla użytkownika: {}: {}",
+                        user, e.getMessage());
+            }
         }
     }
 
@@ -131,7 +150,7 @@ public class ScrapperService {
     }
 
     private void scrapeTrendingWall(WallType wallType) {
-        int credentialCount = UserCredential.SIZE;
+        int credentialCount = 5;
 
         Queue<String> keywordsQueue = new LinkedList<>(currentTrendingKeyword);
 

@@ -212,15 +212,17 @@ public class AdsPowerService {
         Optional.ofNullable(runningDrivers.get(userId))
                 .ifPresent(driver -> {
                     try {
-                        closeAllTabsExceptCurrent(driver);
+                        closeAllTabsIncludingCurrent(driver);
 
+                        log.info("Zatrzymuje driver dla ID: {}", userId);
                         driver.quit();
+
 
                         String url = BASE_URL + "stop?user_id=" + userId;
                         restTemplate.getForObject(url, Object.class);
 
                         runningDrivers.remove(userId);
-                        log.info("Zatrzymano driver dla ID: {}", userId);
+                        log.info("Zatrzymano driver");
                     } catch (Exception e) {
                         log.error("Błąd podczas zatrzymywania przeglądarki: {}", e.getMessage());
                     }
@@ -251,29 +253,23 @@ public class AdsPowerService {
         );
     }
 
-    private void closeAllTabsExceptCurrent(ChromeDriver driver) {
+    private void closeAllTabsIncludingCurrent(ChromeDriver driver) {
         try {
-            String currentWindowHandle = driver.getWindowHandle();
+            List<String> windowHandles = new ArrayList<>(driver.getWindowHandles());
 
-            Set<String> windowHandles = driver.getWindowHandles();
+            Collections.reverse(windowHandles);
 
-            if (windowHandles.size() > 1) {
-                log.info("Znaleziono {} dodatkowych kart do zamknięcia", windowHandles.size() - 1);
-
-                for (String windowHandle : windowHandles) {
-                    if (!windowHandle.equals(currentWindowHandle)) {
-                        driver.switchTo().window(windowHandle);
-                        driver.close();
-                    }
+            for (String windowHandle : windowHandles) {
+                if (driver.getWindowHandles().contains(windowHandle)) {
+                    driver.switchTo().window(windowHandle);
+                    driver.close();
                 }
-
-                driver.switchTo().window(currentWindowHandle);
-
-                log.info("Zamknięto wszystkie dodatkowe karty przeglądarki");
             }
+            log.info("Zamknięto wszystkie karty przeglądarki");
         } catch (Exception e) {
-            log.error("Błąd podczas zamykania dodatkowych kart: {}", e.getMessage());
+            log.error("Błąd podczas zamykania wszystkich kart: {}", e.getMessage());
         }
     }
+
 
 }

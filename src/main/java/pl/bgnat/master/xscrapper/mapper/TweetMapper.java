@@ -17,6 +17,7 @@ public interface TweetMapper {
     @Mapping(target = "likeCount", source = "likeCount")
     @Mapping(target = "repostCount", source = "repostCount")
     @Mapping(target = "commentCount", source = "commentCount")
+    @Mapping(target = "views", source = "views")
     @Mapping(target = "postDate", source = "postDate")
     TweetDto toDto(Tweet tweet);
 }

@@ -13,6 +13,7 @@ public record TweetDto(
         Long likeCount,
         Long repostCount,
         Long commentCount,
+        Long views,
         LocalDateTime postDate
 ) {
 }
