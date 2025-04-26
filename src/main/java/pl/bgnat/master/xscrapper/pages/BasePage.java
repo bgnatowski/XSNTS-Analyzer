@@ -36,6 +36,10 @@ public abstract class BasePage {
         driver.get(BASE_URL);
     }
 
+    protected void open(String url){
+        driver.get(url);
+    }
+
     protected void openSubPage(String subUrl) {
         driver.get(BASE_URL + subUrl);
     }
