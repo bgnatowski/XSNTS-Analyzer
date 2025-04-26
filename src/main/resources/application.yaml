@@ -11,15 +11,13 @@ spring:
     username: postgres_scrapper
     password: postgres_scrapper_pass
   jpa:
-    hibernate:
-      dialect: org.postgresql.Driver
-      ddlAuto: update
+    database-platform: org.hibernate.dialect.PostgreSQLDialect  # [5]
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        ddlAuto: update
+        format_sql: true
     showSql: false
-  properties:
-    hibernate:
-      format_sql: true
-    database: postgresql
-    databasePlatform: org.hibernate.dialect.PostgreSQLDialect
 
 proxy-seller:
   username: &proxy-username dummy-proxy-username
