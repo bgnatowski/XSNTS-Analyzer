@@ -42,6 +42,7 @@ public class TweetProcessingService {
     private final CsvExportService csvExportService;
     private final ProcessingStatsCalculator statsCalculator;
     private final EmptyRecordsCleaner emptyRecordsCleaner;
+    private final NonPolishTweetsCleaner nonPolishTweetsCleaner;
 
     @Value("${app.processing.batch-size:500}")
     private int batchSize;
@@ -150,6 +151,14 @@ public class TweetProcessingService {
      */
     public long getEmptyRecordsCount() {
         return emptyRecordsCleaner.getEmptyRecordsCount();
+    }
+
+    public CleanupResult cleanupNonPolishTweets() {
+        return nonPolishTweetsCleaner.cleanupNonPolishTweets();
+    }
+
+    public long countNonPolishTweets() {
+        return nonPolishTweetsCleaner.countNonPolishTweets();
     }
 
     // ========================================
