@@ -55,6 +55,7 @@ public class TweetProcessingService {
 
     /**
      * Przetwarza pojedynczy tweet
+     *
      * @param tweet tweet do przetworzenia
      * @return przetworzony tweet lub null w przypadku błędu
      */
@@ -101,6 +102,7 @@ public class TweetProcessingService {
 
     /**
      * Pobiera statystyki przetwarzania
+     *
      * @return obiekt ProcessingStats z aktualnymi statystykami
      */
     public ProcessingStats getProcessingStats() {
@@ -109,6 +111,7 @@ public class TweetProcessingService {
 
     /**
      * Eksportuje przetworzone tweety do pliku CSV
+     *
      * @param filename nazwa pliku wyjściowego
      * @return ścieżka do utworzonego pliku
      * @throws IOException w przypadku błędu zapisu
@@ -124,6 +127,7 @@ public class TweetProcessingService {
 
     /**
      * Usuwa rekordy z pustymi polami
+     *
      * @return wynik operacji czyszczenia
      */
     public CleanupResult cleanupEmptyRecords() {
@@ -132,6 +136,7 @@ public class TweetProcessingService {
 
     /**
      * Zwraca listę pustych rekordów
+     *
      * @return lista pustych rekordów
      */
     public List<ProcessedTweet> getEmptyRecords() {
@@ -140,6 +145,7 @@ public class TweetProcessingService {
 
     /**
      * Zwraca liczbę pustych rekordów
+     *
      * @return liczba pustych rekordów
      */
     public long getEmptyRecordsCount() {
