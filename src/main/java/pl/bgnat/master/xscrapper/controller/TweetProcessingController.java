@@ -4,6 +4,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import pl.bgnat.master.xscrapper.dto.CleanupResult;
+import pl.bgnat.master.xscrapper.dto.ProcessingStats;
 import pl.bgnat.master.xscrapper.model.ProcessedTweet;
 import pl.bgnat.master.xscrapper.service.TweetProcessingService;
 
@@ -55,11 +57,11 @@ public class TweetProcessingController {
      * @return ResponseEntity z obiektiem ProcessingStats
      */
     @GetMapping("/stats")
-    public ResponseEntity<TweetProcessingService.ProcessingStats> getProcessingStats() {
+    public ResponseEntity<ProcessingStats> getProcessingStats() {
         log.debug("Pobieranie statystyk przetwarzania");
 
         try {
-            TweetProcessingService.ProcessingStats stats = processingService.getProcessingStats();
+            ProcessingStats stats = processingService.getProcessingStats();
             return ResponseEntity.ok(stats);
 
         } catch (Exception e) {
@@ -121,11 +123,11 @@ public class TweetProcessingController {
      * @return ResponseEntity z wynikiem operacji czyszczenia (CleanupResult)
      */
     @DeleteMapping("/cleanup-empty")
-    public ResponseEntity<TweetProcessingService.CleanupResult> cleanupEmptyRecords() {
+    public ResponseEntity<CleanupResult> cleanupEmptyRecords() {
         log.info("Otrzymano żądanie usunięcia pustych rekordów");
 
         try {
-            TweetProcessingService.CleanupResult result = processingService.cleanupEmptyRecords();
+            CleanupResult result = processingService.cleanupEmptyRecords();
 
             if (result.getSuccess()) {
                 log.info("Pomyślnie usunięto {} pustych rekordów", result.getDeletedRecords());
@@ -138,7 +140,7 @@ public class TweetProcessingController {
         } catch (Exception e) {
             log.error("Nieoczekiwany błąd podczas usuwania pustych rekordów: {}", e.getMessage(), e);
             return ResponseEntity.internalServerError()
-                    .body(TweetProcessingService.CleanupResult.builder()
+                    .body(CleanupResult.builder()
                             .deletedRecords(0)
                             .success(false)
                             .message("Nieoczekiwany błąd: " + e.getMessage())

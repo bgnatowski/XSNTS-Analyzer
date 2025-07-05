@@ -1,8 +1,8 @@
 package pl.bgnat.master.xscrapper.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -11,180 +11,132 @@ import pl.bgnat.master.xscrapper.model.ProcessedTweet;
 import pl.bgnat.master.xscrapper.model.Tweet;
 import pl.bgnat.master.xscrapper.repository.ProcessedTweetRepository;
 import pl.bgnat.master.xscrapper.repository.TweetRepository;
+import pl.bgnat.master.xscrapper.dto.CleanupResult;
+import pl.bgnat.master.xscrapper.dto.ProcessingStats;
 
-import java.io.FileWriter;
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
+/**
+ * Serwis odpowiedzialny za przetwarzanie tweetów
+ * Wykonuje normalizację, tokenizację i zarządzanie przetworzonymi danymi
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
-@Transactional
 public class TweetProcessingService {
+
+    // ========================================
+    // KONFIGURACJA I ZALEŻNOŚCI
+    // ========================================
+
+    private static final int DEFAULT_BATCH_SIZE = 500;
+    private static final int PROGRESS_LOG_INTERVAL = 1000;
 
     private final TweetRepository tweetRepository;
     private final ProcessedTweetRepository processedTweetRepository;
-    private final TextNormalizer textNormalizer;
-    private final ObjectMapper objectMapper;
+    private final TweetProcessor tweetProcessor;
+    private final CsvExportService csvExportService;
+    private final ProcessingStatsCalculator statsCalculator;
+    private final EmptyRecordsCleaner emptyRecordsCleaner;
 
-    public ProcessedTweet processTweet(Tweet tweet) {
-        // Sprawdź czy tweet już został przetworzony
-        if (processedTweetRepository.existsByOriginalTweetId(tweet.getId())) {
-            log.debug("Tweet {} już został przetworzony", tweet.getId());
-            return processedTweetRepository.findByOriginalTweetId(tweet.getId()).orElse(null);
-        }
+    @Value("${app.processing.batch-size:500}")
+    private int batchSize;
 
-        try {
-            TextNormalizer.NormalizedTweet result = textNormalizer.processText(tweet.getContent());
+    @Value("${app.processing.progress-interval:1000}")
+    private int progressInterval;
 
-            ProcessedTweet processedTweet = ProcessedTweet.builder()
-                    .originalTweet(tweet)
-                    .normalizedContent(result.getNormalizedContent())
-                    .tokens(objectMapper.writeValueAsString(result.getTokens()))
-                    .tokenCount(result.getTokenCount())
-                    .processedDate(LocalDateTime.now())
-                    .build();
+    // ========================================
+    // GŁÓWNE METODY PRZETWARZANIA
+    // ========================================
 
-            return processedTweetRepository.save(processedTweet);
-
-        } catch (Exception e) {
-            log.error("Błąd podczas przetwarzania tweeta {}: {}", tweet.getId(), e.getMessage());
-            return null;
-        }
-    }
-
-    public void processAllTweets() {
-        log.info("Rozpoczynam przetwarzanie wszystkich tweetów");
-
-        int pageSize = 100;
-        int pageNumber = 0;
-        Page<Tweet> page;
-        int processedCount = 0;
-
-        do {
-            page = tweetRepository.findAll(PageRequest.of(pageNumber, pageSize));
-
-            for (Tweet tweet : page.getContent()) {
-                ProcessedTweet processed = processTweet(tweet);
-                if (processed != null) {
-                    processedCount++;
-                }
-            }
-
-            pageNumber++;
-            log.info("Przetworzono {} z {} tweetów", processedCount, tweetRepository.count());
-
-        } while (page.hasNext());
-
-        log.info("Zakończono przetwarzanie. Przetworzono {} tweetów", processedCount);
-    }
-
-    public String exportToCsv(String filePath) throws IOException {
-        log.info("Eksport do CSV: {}", filePath);
-
-        List<ProcessedTweet> processedTweets = processedTweetRepository.findAll();
-
-        try (FileWriter writer = new FileWriter(filePath)) {
-            // Nagłówek CSV
-            writer.append("tweet_id,username,original_content,normalized_content,tokens,token_count,post_date\n");
-
-            for (ProcessedTweet processed : processedTweets) {
-                Tweet originalTweet = processed.getOriginalTweet();
-
-                writer.append(String.valueOf(originalTweet.getId())).append(",");
-                writer.append("\"").append(escapeForCsv(originalTweet.getUsername())).append("\",");
-                writer.append("\"").append(escapeForCsv(originalTweet.getContent())).append("\",");
-                writer.append("\"").append(escapeForCsv(processed.getNormalizedContent())).append("\",");
-                writer.append("\"").append(escapeForCsv(processed.getTokens())).append("\",");
-                writer.append(String.valueOf(processed.getTokenCount())).append(",");
-                writer.append("\"").append(originalTweet.getPostDate().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)).append("\"");
-                writer.append("\n");
-            }
-        }
-
-        log.info("Eksport zakończony. Wyeksportowano {} rekordów", processedTweets.size());
-        return filePath;
-    }
-
-    private String escapeForCsv(String value) {
-        if (value == null) return "";
-        return value.replace("\"", "\"\"");
-    }
-
-    public ProcessingStats getProcessingStats() {
-        long totalTweets = tweetRepository.count();
-        long processedTweets = processedTweetRepository.count();
-        long averageTokens = processedTweetRepository.findAll()
-                .stream()
-                .mapToLong(ProcessedTweet::getTokenCount)
-                .sum() / Math.max(processedTweets, 1);
-
-        return ProcessingStats.builder()
-                .totalTweets(totalTweets)
-                .processedTweets(processedTweets)
-                .averageTokensPerTweet(averageTokens)
-                .processingProgress((double) processedTweets / totalTweets * 100)
-                .build();
-    }
-
-    @lombok.Builder
-    @lombok.Data
-    public static class ProcessingStats {
-        private Long totalTweets;
-        private Long processedTweets;
-        private Long averageTokensPerTweet;
-        private Double processingProgress;
-    }
     /**
-     * Usuwa rekordy z tabeli processed_tweet gdzie normalized_content i tokens są puste
-     * @return liczba usuniętych rekordów
+     * Przetwarza pojedynczy tweet
+     * @param tweet tweet do przetworzenia
+     * @return przetworzony tweet lub null w przypadku błędu
+     */
+    @Transactional
+    public ProcessedTweet processTweet(Tweet tweet) {
+        validateTweet(tweet);
+
+        if (isAlreadyProcessed(tweet.getId())) {
+            log.debug("Tweet {} już został przetworzony", tweet.getId());
+            return findProcessedTweet(tweet.getId());
+        }
+
+        return tweetProcessor.processAndSave(tweet);
+    }
+
+    /**
+     * ZOPTYMALIZOWANA metoda przetwarzania wszystkich tweetów
+     * Używa batch processing dla zwiększenia wydajności
+     */
+    @Transactional
+    public void processAllTweets() {
+        log.info("Rozpoczynam zoptymalizowane przetwarzanie wszystkich tweetów");
+
+        long startTime = System.currentTimeMillis();
+        AtomicInteger totalProcessed = new AtomicInteger(0);
+
+        // Pobierz tylko ID tweetów które nie zostały jeszcze przetworzone
+        Set<Long> processedTweetIds = getProcessedTweetIds();
+        long totalTweets = getTotalTweetCount();
+
+        log.info("Znaleziono {} tweetów do przetworzenia (z {} całkowitych)",
+                totalTweets - processedTweetIds.size(), totalTweets);
+
+        processUnprocessedTweetsBatch(processedTweetIds, totalProcessed);
+
+        long endTime = System.currentTimeMillis();
+        log.info("Zakończono przetwarzanie. Przetworzono {} nowych tweetów w {} ms",
+                totalProcessed.get(), endTime - startTime);
+    }
+
+    // ========================================
+    // STATYSTYKI I EKSPORT
+    // ========================================
+
+    /**
+     * Pobiera statystyki przetwarzania
+     * @return obiekt ProcessingStats z aktualnymi statystykami
+     */
+    public ProcessingStats getProcessingStats() {
+        return statsCalculator.calculateStats();
+    }
+
+    /**
+     * Eksportuje przetworzone tweety do pliku CSV
+     * @param filename nazwa pliku wyjściowego
+     * @return ścieżka do utworzonego pliku
+     * @throws IOException w przypadku błędu zapisu
+     */
+    public String exportToCsv(String filename) throws IOException {
+        validateFilename(filename);
+        return csvExportService.exportProcessedTweets(filename);
+    }
+
+    // ========================================
+    // ZARZĄDZANIE PUSTYMI REKORDAMI
+    // ========================================
+
+    /**
+     * Usuwa rekordy z pustymi polami
+     * @return wynik operacji czyszczenia
      */
     public CleanupResult cleanupEmptyRecords() {
-        log.info("Rozpoczynam usuwanie pustych rekordów z processed_tweet");
-
-        try {
-            // Najpierw sprawdź ile rekordów będzie usuniętych
-            long emptyRecordsCount = processedTweetRepository.countEmptyRecords();
-            log.info("Znaleziono {} pustych rekordów do usunięcia", emptyRecordsCount);
-
-            if (emptyRecordsCount == 0) {
-                return CleanupResult.builder()
-                        .deletedRecords(0)
-                        .success(true)
-                        .message("Brak pustych rekordów do usunięcia")
-                        .build();
-            }
-
-            // Usuń puste rekordy
-            int deletedCount = processedTweetRepository.deleteEmptyRecords();
-
-            log.info("Usunięto {} pustych rekordów", deletedCount);
-
-            return CleanupResult.builder()
-                    .deletedRecords(deletedCount)
-                    .success(true)
-                    .message("Pomyślnie usunięto " + deletedCount + " pustych rekordów")
-                    .build();
-
-        } catch (Exception e) {
-            log.error("Błąd podczas usuwania pustych rekordów: {}", e.getMessage());
-            return CleanupResult.builder()
-                    .deletedRecords(0)
-                    .success(false)
-                    .message("Błąd podczas usuwania: " + e.getMessage())
-                    .build();
-        }
+        return emptyRecordsCleaner.cleanupEmptyRecords();
     }
 
     /**
-     * Zwraca listę pustych rekordów (do podglądu przed usunięciem)
+     * Zwraca listę pustych rekordów
      * @return lista pustych rekordów
      */
     public List<ProcessedTweet> getEmptyRecords() {
-        return processedTweetRepository.findEmptyRecords();
+        return emptyRecordsCleaner.getEmptyRecords();
     }
 
     /**
@@ -192,14 +144,83 @@ public class TweetProcessingService {
      * @return liczba pustych rekordów
      */
     public long getEmptyRecordsCount() {
-        return processedTweetRepository.countEmptyRecords();
+        return emptyRecordsCleaner.getEmptyRecordsCount();
     }
 
-    @lombok.Builder
-    @lombok.Data
-    public static class CleanupResult {
-        private Integer deletedRecords;
-        private Boolean success;
-        private String message;
+    // ========================================
+    // METODY POMOCNICZE
+    // ========================================
+
+    private void processUnprocessedTweetsBatch(Set<Long> processedTweetIds, AtomicInteger totalProcessed) {
+        int pageNumber = 0;
+        Page<Tweet> page;
+
+        do {
+            page = tweetRepository.findAll(PageRequest.of(pageNumber, batchSize));
+
+            List<Tweet> unprocessedTweets = page.getContent().stream()
+                    .filter(tweet -> !processedTweetIds.contains(tweet.getId()))
+                    .collect(Collectors.toList());
+
+            if (!unprocessedTweets.isEmpty()) {
+                int batchProcessed = processTweetsBatch(unprocessedTweets);
+                totalProcessed.addAndGet(batchProcessed);
+
+                logProgressIfNeeded(totalProcessed.get());
+            }
+
+            pageNumber++;
+
+        } while (page.hasNext());
+    }
+
+    private int processTweetsBatch(List<Tweet> tweets) {
+        List<ProcessedTweet> processedTweets = tweets.stream()
+                .map(tweetProcessor::processWithoutSave)
+                .filter(processedTweet -> processedTweet != null)
+                .collect(Collectors.toList());
+
+        if (!processedTweets.isEmpty()) {
+            processedTweetRepository.saveAll(processedTweets);
+        }
+
+        return processedTweets.size();
+    }
+
+    private Set<Long> getProcessedTweetIds() {
+        return processedTweetRepository.findAllProcessedTweetIds();
+    }
+
+    private long getTotalTweetCount() {
+        return tweetRepository.count();
+    }
+
+    private void logProgressIfNeeded(int processed) {
+        if (processed % progressInterval == 0) {
+            log.info("Przetworzono {} tweetów", processed);
+        }
+    }
+
+    private boolean isAlreadyProcessed(Long tweetId) {
+        return processedTweetRepository.existsByOriginalTweetId(tweetId);
+    }
+
+    private ProcessedTweet findProcessedTweet(Long tweetId) {
+        return processedTweetRepository.findByOriginalTweetId(tweetId).orElse(null);
+    }
+
+    private void validateTweet(Tweet tweet) {
+        if (tweet == null) {
+            throw new IllegalArgumentException("Tweet nie może być null");
+        }
+        if (tweet.getId() == null) {
+            throw new IllegalArgumentException("Tweet ID nie może być null");
+        }
+    }
+
+    private void validateFilename(String filename) {
+        if (filename == null || filename.trim().isEmpty()) {
+            throw new IllegalArgumentException("Nazwa pliku nie może być pusta");
+        }
     }
 }
