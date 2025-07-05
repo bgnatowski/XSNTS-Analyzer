@@ -22,6 +22,8 @@
         <jsoup.version>1.16.2</jsoup.version>
         <httpclient.version>4.5.13</httpclient.version>
         <kafka.version>3.9.0</kafka.version>
+        <mallet.version>2.0.8</mallet.version>
+        <commons-math3.version>3.6.1</commons-math3.version>
     </properties>
 
     <dependencies>
@@ -86,12 +88,20 @@
             <artifactId>kafka-clients</artifactId>
             <version>${kafka.version}</version>
         </dependency>
+
+        <!-- MALLET dla topic modeling -->
         <dependency>
-            <groupId>com.github.pemistahl</groupId>
-            <artifactId>lingua</artifactId>
-            <version>1.2.2</version>
+            <groupId>cc.mallet</groupId>
+            <artifactId>mallet</artifactId>
+            <version>${mallet.version}</version>
         </dependency>
 
+        <!-- Apache Commons Math dla statystyk -->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-math3</artifactId>
+            <version>${commons-math3.version}</version>
+        </dependency>
         <!--        TESTS -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

@@ -33,7 +33,7 @@ public class ProcessedTweet {
     private String normalizedContent;
 
     @Column(name = "tokens", columnDefinition = "TEXT")
-    private String tokens; // JSON array jako string
+    private String tokens;
 
     @Column(name = "processed_date")
     private LocalDateTime processedDate;

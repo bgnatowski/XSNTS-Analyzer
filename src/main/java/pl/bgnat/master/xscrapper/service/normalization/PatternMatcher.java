@@ -26,11 +26,11 @@ public class PatternMatcher {
     }
 
     public Pattern createNumberPattern() {
-        return Pattern.compile("\\d+");
+        return Pattern.compile("\\b\\d{5,}\\b");
     }
 
     public Pattern createPunctuationPattern() {
-        return Pattern.compile("[^\\p{L}\\p{N}\\s]");
+        return Pattern.compile("[^\\p{L}\\p{N}\\s#]");
     }
 
     public Pattern createWhitespacePattern() {

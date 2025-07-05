@@ -33,7 +33,6 @@ public class TextNormalizer {
 
     private static final String USER_PLACEHOLDER = " USER ";
     private static final String NUMBER_PLACEHOLDER = " NUMBER ";
-    private static final int MIN_TOKEN_LENGTH = 1;
 
     // ========================================
     // WZORCE REGEX DLA NORMALIZACJI
@@ -45,7 +44,6 @@ public class TextNormalizer {
     private final Pattern numberPattern;
     private final Pattern punctuationPattern;
     private final Pattern whitespacePattern;
-    private final Pattern emoticonsPattern;
 
     // ========================================
     // KONFIGURACJA I DANE
@@ -74,7 +72,6 @@ public class TextNormalizer {
         this.numberPattern = patternMatcher.createNumberPattern();
         this.punctuationPattern = patternMatcher.createPunctuationPattern();
         this.whitespacePattern = patternMatcher.createWhitespacePattern();
-        this.emoticonsPattern = patternMatcher.createEmoticonsPattern();
 
         log.info("TextNormalizer zainicjalizowany. Załadowano {} słów stop", stopWords.size());
     }
@@ -116,7 +113,7 @@ public class TextNormalizer {
         normalized = normalizeMentions(normalized);
 
         // Krok 3: Przetwarzanie hashtagów
-        normalized = processHashtags(normalized);
+//        normalized = processHashtags(normalized);
 
         // Krok 4: Normalizacja liczb
         normalized = normalizeNumbers(normalized);

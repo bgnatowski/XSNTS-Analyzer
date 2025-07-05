@@ -42,7 +42,9 @@ public class StopWordsManager {
                 // Czasowniki pomocnicze
                 "jest", "są", "był", "była", "było", "były", "będzie", "będą",
                 // Przysłówki
-                "nie", "się", "jak", "czy", "gdy", "dla", "po"
+                "nie", "się", "jak", "czy", "gdy", "dla", "po",
+                "user", "tak", "ten", "tym", "tego", "już", "tylko", "może", "być",
+                "kto", "też", "jego", "która", "które", "lat", "roku", "dzień"
         };
 
         Collections.addAll(stopWords, basicStopWords);
