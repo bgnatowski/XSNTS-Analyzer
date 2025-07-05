@@ -1,4 +1,4 @@
-package pl.bgnat.master.xscrapper.service;
+package pl.bgnat.master.xscrapper.service.scrapper;
 
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -14,7 +14,6 @@ import pl.bgnat.master.xscrapper.repository.TweetRepository;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 
 @Slf4j

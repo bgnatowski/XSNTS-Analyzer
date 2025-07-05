@@ -1,4 +1,4 @@
-package pl.bgnat.master.xscrapper.config;
+package pl.bgnat.master.xscrapper.config.kafka;
 
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;

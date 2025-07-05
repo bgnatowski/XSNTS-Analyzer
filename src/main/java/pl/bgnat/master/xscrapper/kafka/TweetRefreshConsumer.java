@@ -5,7 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.stereotype.Service;
-import pl.bgnat.master.xscrapper.service.TweetUpdateService;
+import pl.bgnat.master.xscrapper.service.scrapper.TweetUpdateService;
 
 import java.util.List;
 

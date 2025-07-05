@@ -1,4 +1,4 @@
-package pl.bgnat.master.xscrapper.service;
+package pl.bgnat.master.xscrapper.service.scrapper;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -10,7 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
-import pl.bgnat.master.xscrapper.config.AdsPowerProperties;
+import pl.bgnat.master.xscrapper.config.scrapper.AdsPowerProperties;
 import pl.bgnat.master.xscrapper.dto.AdsPowerResponse;
 import pl.bgnat.master.xscrapper.dto.BrowserStatusData;
 import pl.bgnat.master.xscrapper.dto.WebSocketInfo;

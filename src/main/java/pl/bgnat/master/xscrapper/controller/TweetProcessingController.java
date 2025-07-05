@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.*;
 import pl.bgnat.master.xscrapper.dto.CleanupResult;
 import pl.bgnat.master.xscrapper.dto.ProcessingStats;
 import pl.bgnat.master.xscrapper.model.ProcessedTweet;
-import pl.bgnat.master.xscrapper.service.TweetProcessingService;
+import pl.bgnat.master.xscrapper.service.normalization.TweetProcessingService;
 
 import java.io.IOException;
 import java.util.List;

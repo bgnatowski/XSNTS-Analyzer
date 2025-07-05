@@ -1,4 +1,4 @@
-package pl.bgnat.master.xscrapper.service;
+package pl.bgnat.master.xscrapper.service.normalization;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;

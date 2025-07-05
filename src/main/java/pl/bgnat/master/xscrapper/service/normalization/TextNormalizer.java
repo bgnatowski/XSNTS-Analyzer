@@ -1,4 +1,4 @@
-package pl.bgnat.master.xscrapper.service;
+package pl.bgnat.master.xscrapper.service.normalization;
 
 import org.springframework.stereotype.Component;
 

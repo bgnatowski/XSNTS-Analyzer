@@ -4,7 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
-import pl.bgnat.master.xscrapper.config.CredentialProperties;
+import pl.bgnat.master.xscrapper.config.scrapper.CredentialProperties;
 import pl.bgnat.master.xscrapper.dto.UserCredential;
 
 import static pl.bgnat.master.xscrapper.dto.UserCredential.User;

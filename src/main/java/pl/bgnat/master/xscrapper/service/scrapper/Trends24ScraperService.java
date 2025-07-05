@@ -1,4 +1,4 @@
-package pl.bgnat.master.xscrapper.service;
+package pl.bgnat.master.xscrapper.service.scrapper;
 
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;

@@ -1,4 +1,4 @@
-package pl.bgnat.master.xscrapper.config;
+package pl.bgnat.master.xscrapper.config.scrapper;
 
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;

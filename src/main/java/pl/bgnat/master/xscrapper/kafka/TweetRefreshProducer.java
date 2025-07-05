@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
-import pl.bgnat.master.xscrapper.service.TweetService;
+import pl.bgnat.master.xscrapper.service.scrapper.TweetService;
 
 import java.time.LocalDateTime;
 import java.util.List;

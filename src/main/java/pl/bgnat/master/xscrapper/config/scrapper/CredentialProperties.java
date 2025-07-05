@@ -1,4 +1,4 @@
-package pl.bgnat.master.xscrapper.config;
+package pl.bgnat.master.xscrapper.config.scrapper;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
