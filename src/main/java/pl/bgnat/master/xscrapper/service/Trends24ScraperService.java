@@ -82,7 +82,6 @@ public class Trends24ScraperService {
                     closestContainer = container;
                 }
             } catch (NumberFormatException e) {
-                // Ignoruj elementy z niepoprawnym timestampem
                 log.info("Niepoprawny format");
             }
         }

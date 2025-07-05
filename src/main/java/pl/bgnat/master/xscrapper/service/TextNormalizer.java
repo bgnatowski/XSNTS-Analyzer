@@ -46,7 +46,6 @@ public class TextNormalizer {
 
         Collections.addAll(stopWords, basicStopWords);
 
-        // Próba załadowania z pliku (opcjonalne)
         try (BufferedReader reader = new BufferedReader(
                 new InputStreamReader(
                         getClass().getResourceAsStream("/stopwords_pl.txt"),

@@ -1,10 +1,8 @@
-package pl.bgnat.master.xscrapper.producer;
+package pl.bgnat.master.xscrapper.kafka;
 
-import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import pl.bgnat.master.xscrapper.service.TweetService;
 
@@ -20,7 +18,7 @@ public class TweetRefreshProducer {
     private final TweetService tweetService;
     private final KafkaTemplate<String, Long> kafkaTemplate;
 
-//    @Scheduled(cron = "0 0 */2 * * *")  // co 2 godziny
+    //    @Scheduled(cron = "0 0 */2 * * *")  // co 2 godziny
 //    @PostConstruct
     public void enqueueTweets() {
         var cutoff = LocalDateTime.now().minusDays(2);
