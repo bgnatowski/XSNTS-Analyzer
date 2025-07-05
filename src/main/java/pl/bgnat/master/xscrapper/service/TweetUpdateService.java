@@ -1,76 +1,95 @@
 package pl.bgnat.master.xscrapper.service;
 
-import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import pl.bgnat.master.xscrapper.dto.Metrics;
-import pl.bgnat.master.xscrapper.dto.TweetDto;
-import pl.bgnat.master.xscrapper.dto.UserCredential;
 import pl.bgnat.master.xscrapper.model.Tweet;
 import pl.bgnat.master.xscrapper.pages.TweetDetailPage;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.*;
 
-import static pl.bgnat.master.xscrapper.dto.UserCredential.*;
+import static pl.bgnat.master.xscrapper.dto.UserCredential.User;
+import static pl.bgnat.master.xscrapper.utils.WaitUtils.waitRandom;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class TweetUpdateService {
+    private static final int NUM_BROWSERS      = 5;
+    private static final int BATCH_PER_BROWSER = 25;
 
     private final TweetService tweetService;
     private final AdsPowerService adsPowerService;
+    private final ExecutorService executor = Executors.newFixedThreadPool(NUM_BROWSERS);
 
-    @PostConstruct
-    public void updateOneTweet() {
-        long testId = 27098L;
-        updateSingleTweet(testId)
-                .ifPresent(tweet -> log.info("Updated tweetId: {}", tweet.id()));
-    }
+    public void bulkRefreshTweets(List<Long> tweetIds) {
+        BlockingQueue<Long> queue = new LinkedBlockingQueue<>(tweetIds);
+        Set<Tweet> updatedTweets = new HashSet<>();
 
-    private Optional<TweetDto> updateSingleTweet(Long tweetId) {
-        return tweetService.findTweetById(tweetId)
-                .flatMap(this::refreshMetrics)
-                .map(tweetService::saveTweet);
-    }
+        for (int i = 0; i < NUM_BROWSERS; i++) {
+            executor.submit(() -> {
+                var user   = User.getNextAvailableUser();
+                var driver = adsPowerService.getDriverForUser(user);
+                int count  = 0;
 
-    private Optional<Tweet> refreshMetrics(Tweet tweet) {
-        // Round-robin pick next user
-        User user = User.getNextAvailableUser();
-        ChromeDriver driver = adsPowerService.getDriverForUser(user);
+                try {
+                    while (true) {
+                        Long id = queue.poll(1, TimeUnit.SECONDS);
+                        if (id == null) break;
 
-        if (driver == null) {
-            log.error("Cannot obtain AdsPower browser for user {}", user);
-            return Optional.of(tweet);
+                        log.info("Refreshuje tweeta o id: {}", id);
+                        updatedTweets.add(updateOne(id, driver));
+                        count++;
+
+                        log.info("Count: {}", count);
+                        if (count % BATCH_PER_BROWSER == 0) {
+                            log.info("Osiagnieto count: {}. Restartuje przegladarke", count);
+                            adsPowerService.stopDriver(user);
+                            waitRandom();
+                            driver = adsPowerService.getDriverForUser(user);
+                            if (driver == null) {
+                                log.error("Restart przegladarki dla {} niepowodzenie.", user);
+                                break;
+                            }
+                        }
+                    }
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                } finally {
+                    log.info("Zaktualizowano tweety. Zapisuje w db.");
+                    tweetService.updateTweets(updatedTweets);
+                    adsPowerService.stopDriver(user);
+                }
+            });
         }
+    }
 
+    @Transactional
+    public Tweet updateOne(Long tweetId, ChromeDriver driver) {
+        Tweet tweetToUpdate = tweetService.findTweetById(tweetId);
         try {
-            Metrics metrics = scrapeMetrics(tweet.getLink(), driver);
-            applyMetrics(tweet, metrics);
-            return Optional.of(tweet);
+            var page = new TweetDetailPage(driver, tweetToUpdate.getLink());
+            page.waitForLoad();
+            Metrics m = page.getMetrics();
+
+            log.info("Tweet: {}, Replies: {}, Reposts: {}, Likes: {}, Views: {}", tweetToUpdate.getId(), m.getReplies(), m.getReposts(), m.getLikes(), m.getViews());
+            tweetToUpdate.setCommentCount(m.getReplies());
+            tweetToUpdate.setRepostCount(m.getReposts());
+            tweetToUpdate.setLikeCount(m.getLikes());
+            tweetToUpdate.setViews(m.getViews());
+            tweetToUpdate.setUpdateDate(LocalDateTime.now());
+            tweetToUpdate.setNeedsRefresh(false);
         } catch (Exception e) {
-            log.error("Error updating tweet {}: {}", tweet.getId(), e.getMessage(), e);
-            return Optional.of(tweet);
-        } finally {
-            adsPowerService.stopDriver(user);
+            log.error("Nie udalo sie zupdateowac tweeta o id {}: {}", tweetId, e.getMessage());
         }
-    }
-
-    private Metrics scrapeMetrics(String url, ChromeDriver driver) {
-        var page = new TweetDetailPage(driver, url);
-        page.waitForLoad();
-        return page.getMetrics();
-    }
-
-    private void applyMetrics(Tweet tweet, Metrics m) {
-        log.info("Replies: {}, Reposts: {}, Likes: {}, Views: {}", m.getReplies(), m.getReposts(), m.getLikes(), m.getViews());
-        tweet.setCommentCount(m.getReplies());
-        tweet.setRepostCount(m.getReposts());
-        tweet.setLikeCount(m.getLikes());
-        tweet.setViews(m.getViews());
-        tweet.setUpdateDate(LocalDateTime.now());
+        return tweetToUpdate;
     }
 }

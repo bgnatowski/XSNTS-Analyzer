@@ -1,18 +1,34 @@
 package pl.bgnat.master.xscrapper.repository;
 
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.stereotype.Repository;
+import org.springframework.data.repository.query.Param;
 import pl.bgnat.master.xscrapper.model.Tweet;
 
-@Repository
+import java.time.LocalDateTime;
+import java.util.List;
+
 public interface TweetRepository extends JpaRepository<Tweet, Long> {
-    boolean existsTweetByLink(String link);
-    Tweet findByLink(String link);
 
-        @Query("SELECT t FROM Tweet t WHERE t.content IS NOT NULL ORDER BY t.updateDate ASC")
-        Page<Tweet> findTweetsForUpdate(Pageable pageable);
-    }
+    @Query("""
+        SELECT t.id
+        FROM Tweet t
+        WHERE t.needsRefresh = true
+          AND t.updateDate < :cutoff
+        ORDER BY t.updateDate ASC
+        """)
+    List<Long> findIdsToRefresh(
+            @Param("cutoff") LocalDateTime cutoff,
+            Pageable pageable
+    );
 
+    @Query("""
+        SELECT t.id
+        FROM Tweet t
+        ORDER BY t.updateDate ASC
+        """)
+    List<Long> findOldestTweetIds(Pageable pageable);
+
+    boolean existsByLink(String link);
+}

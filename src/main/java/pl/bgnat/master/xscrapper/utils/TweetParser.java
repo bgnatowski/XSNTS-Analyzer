@@ -102,7 +102,7 @@ public class TweetParser {
 
             return new Metrics(replies, reposts, likes, views);
         } catch (NoSuchElementException e) {
-            log.warn("Metrics group not found", e);
+            log.warn("Nie znaleziono grupy z metrykami", e);
             return Metrics.empty();
         }
     }

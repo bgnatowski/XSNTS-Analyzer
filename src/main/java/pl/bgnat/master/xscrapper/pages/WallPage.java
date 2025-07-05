@@ -17,7 +17,7 @@ import static pl.bgnat.master.xscrapper.utils.WaitUtils.waitRandom;
 
 @Slf4j
 public class WallPage extends BasePage {
-    private static final int MAX_TWEETS_PER_SCRAPE = 500;
+    private static final int MAX_TWEETS_PER_SCRAPE = 100;
     private final UserCredential.User user;
 
     public enum WallType {
@@ -75,7 +75,7 @@ public class WallPage extends BasePage {
 
                 if(repeatedBottom > 6){
                     log.info("Tweety się nie ładują przez 6 petli. Refresh");
-                    refreshPage();
+                    break;
                 }
                 if (repeatedBottom > 10) break;
 
@@ -114,6 +114,7 @@ public class WallPage extends BasePage {
         tweet.setPostDate(postDate);
 
         Metrics m = getMetricsForTweet(tweetElement);
+        log.info("Replies: {}, Reposts: {}, Likes: {}, Views: {}", m.getReplies(), m.getReposts(), m.getLikes(), m.getViews());
         tweet.setCommentCount(m.getReplies());
         tweet.setRepostCount(m.getReposts());
         tweet.setLikeCount(m.getLikes());

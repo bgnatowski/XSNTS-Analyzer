@@ -1,8 +1,9 @@
 package pl.bgnat.master.xscrapper.service;
 
-import lombok.AllArgsConstructor;
+import jakarta.persistence.EntityNotFoundException;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.openqa.selenium.NotFoundException;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import pl.bgnat.master.xscrapper.dto.TweetDto;
@@ -12,12 +13,13 @@ import pl.bgnat.master.xscrapper.repository.TweetRepository;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-@Service
 @Slf4j
-@AllArgsConstructor
+@Service
+@RequiredArgsConstructor
 public class TweetService {
     private final TweetRepository tweetRepository;
 
@@ -26,7 +28,7 @@ public class TweetService {
         int repeatCount = 0;
         for (Tweet tweet : scrappedTweets) {
             if (StringUtils.hasLength(tweet.getLink())) {
-                if (!isExists(tweet)) {
+                if (!tweetRepository.existsByLink(tweet.getLink())) {
                     tweetsList.add(tweet);
                 } else {
                     repeatCount ++;
@@ -39,17 +41,33 @@ public class TweetService {
         log.info("Zapisano: {} tweetow do bazy z {} zescrapowanych. Ilość powtórzeń: {}", tweetsList.size(), scrappedTweets.size(), repeatCount);
     }
 
-    public Optional<Tweet> findTweetById(Long tweetId) {
-        return tweetRepository.findById(tweetId);
+    public Tweet findTweetById(Long id) {
+        return tweetRepository.findById(id).orElseThrow(() -> new EntityNotFoundException(String.valueOf(id)));
     }
 
-    public TweetDto saveTweet(Tweet tweet){
+    public TweetDto saveTweet(Tweet tweet) {
         Tweet saved = tweetRepository.save(tweet);
         return TweetMapper.INSTANCE.toDto(saved);
     }
 
-    private boolean isExists(Tweet tweetObj) {
-        String link = tweetObj.getLink();
-        return tweetRepository.existsTweetByLink(link);
+    public List<Long> findOldestTweetIds(int limit) {
+        return tweetRepository.findOldestTweetIds(PageRequest.of(0, limit));
+    }
+
+    public List<Long> findIdsToRefresh(LocalDateTime cutoff, int limit) {
+        return tweetRepository.findIdsToRefresh(cutoff, PageRequest.of(0, limit));
+    }
+
+    public List<Tweet> findAllByIds(List<Long> ids) {
+        return tweetRepository.findAllById(ids);
+    }
+
+    public boolean existsTweetByLink(String link) {
+        return tweetRepository.existsByLink(link);
+    }
+
+    public void updateTweets(Set<Tweet> updatedTweets) {
+        tweetRepository.saveAll(updatedTweets);
     }
 }
+

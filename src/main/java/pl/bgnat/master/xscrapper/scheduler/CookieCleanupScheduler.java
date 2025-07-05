@@ -9,7 +9,7 @@ import pl.bgnat.master.xscrapper.utils.CookieUtils;
 @Data
 public class CookieCleanupScheduler {
 
-    @Scheduled(cron = "0 0 0 */2 * *")
+//    @Scheduled(cron = "0 0 0 */2 * *")
     public void cleanCookiesDaily() {
         log.info("Rozpoczynam czyszczenie plików ciasteczek...");
         CookieUtils.deleteAllCookiesFiles();

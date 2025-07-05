@@ -1,0 +1,176 @@
+package pl.bgnat.master.xscrapper.controller;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import pl.bgnat.master.xscrapper.model.ProcessedTweet;
+import pl.bgnat.master.xscrapper.service.TweetProcessingService;
+
+import java.io.IOException;
+import java.util.List;
+
+/**
+ * Kontroler REST API dla przetwarzania tweetów
+ * Obsługuje operacje normalizacji, tokenizacji i zarządzania przetworzonymi danymi
+ */
+@Slf4j
+@RestController
+@RequestMapping("/api/processing")
+@RequiredArgsConstructor
+public class TweetProcessingController {
+
+    private final TweetProcessingService processingService;
+
+    // ========================================
+    // SEKCJA 1: GŁÓWNE PRZETWARZANIE TWEETÓW
+    // ========================================
+
+    /**
+     * Uruchamia przetwarzanie wszystkich tweetów z bazy danych
+     * Wykonuje normalizację i tokenizację treści tweetów
+     *
+     * @return ResponseEntity z informacją o rozpoczęciu przetwarzania
+     */
+    @PostMapping("/process-all")
+    public ResponseEntity<String> processAllTweets() {
+        log.info("Otrzymano żądanie przetwarzania wszystkich tweetów");
+
+        try {
+            processingService.processAllTweets();
+            log.info("Przetwarzanie wszystkich tweetów rozpoczęte pomyślnie");
+            return ResponseEntity.ok("Przetwarzanie rozpoczęte");
+
+        } catch (Exception e) {
+            log.error("Błąd podczas uruchamiania przetwarzania tweetów: {}", e.getMessage(), e);
+            return ResponseEntity.internalServerError()
+                    .body("Błąd podczas przetwarzania: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Zwraca statystyki przetwarzania
+     * Pokazuje liczbę przetworzonych tweetów, postęp i średnie wartości
+     *
+     * @return ResponseEntity z obiektiem ProcessingStats
+     */
+    @GetMapping("/stats")
+    public ResponseEntity<TweetProcessingService.ProcessingStats> getProcessingStats() {
+        log.debug("Pobieranie statystyk przetwarzania");
+
+        try {
+            TweetProcessingService.ProcessingStats stats = processingService.getProcessingStats();
+            return ResponseEntity.ok(stats);
+
+        } catch (Exception e) {
+            log.error("Błąd podczas pobierania statystyk: {}", e.getMessage(), e);
+            return ResponseEntity.internalServerError().body(null);
+        }
+    }
+
+    // ==========================================
+    // SEKCJA 2: ZARZĄDZANIE PUSTYMI REKORDAMI
+    // ==========================================
+
+    /**
+     * Zwraca liczbę pustych rekordów w tabeli processed_tweet
+     * Puste rekordy to te, które mają puste pola normalized_content lub tokens
+     *
+     * @return ResponseEntity z liczbą pustych rekordów
+     */
+    @GetMapping("/empty-count")
+    public ResponseEntity<Long> getEmptyRecordsCount() {
+        log.debug("Pobieranie liczby pustych rekordów");
+
+        try {
+            long count = processingService.getEmptyRecordsCount();
+            log.info("Znaleziono {} pustych rekordów", count);
+            return ResponseEntity.ok(count);
+
+        } catch (Exception e) {
+            log.error("Błąd podczas pobierania liczby pustych rekordów: {}", e.getMessage(), e);
+            return ResponseEntity.internalServerError().body(0L);
+        }
+    }
+
+    /**
+     * Zwraca listę pustych rekordów (do podglądu przed usunięciem)
+     * Pozwala na weryfikację, które rekordy zostaną usunięte
+     *
+     * @return ResponseEntity z listą pustych rekordów ProcessedTweet
+     */
+    @GetMapping("/empty-records")
+    public ResponseEntity<List<ProcessedTweet>> getEmptyRecords() {
+        log.debug("Pobieranie listy pustych rekordów");
+
+        try {
+            List<ProcessedTweet> emptyRecords = processingService.getEmptyRecords();
+            log.info("Znaleziono {} pustych rekordów do wyświetlenia", emptyRecords.size());
+            return ResponseEntity.ok(emptyRecords);
+
+        } catch (Exception e) {
+            log.error("Błąd podczas pobierania pustych rekordów: {}", e.getMessage(), e);
+            return ResponseEntity.internalServerError().body(List.of());
+        }
+    }
+
+    /**
+     * Usuwa rekordy z pustymi polami normalized_content i tokens
+     * Operacja jest nieodwracalna - usuwa dane z bazy danych
+     *
+     * @return ResponseEntity z wynikiem operacji czyszczenia (CleanupResult)
+     */
+    @DeleteMapping("/cleanup-empty")
+    public ResponseEntity<TweetProcessingService.CleanupResult> cleanupEmptyRecords() {
+        log.info("Otrzymano żądanie usunięcia pustych rekordów");
+
+        try {
+            TweetProcessingService.CleanupResult result = processingService.cleanupEmptyRecords();
+
+            if (result.getSuccess()) {
+                log.info("Pomyślnie usunięto {} pustych rekordów", result.getDeletedRecords());
+                return ResponseEntity.ok(result);
+            } else {
+                log.warn("Nie udało się usunąć pustych rekordów: {}", result.getMessage());
+                return ResponseEntity.internalServerError().body(result);
+            }
+
+        } catch (Exception e) {
+            log.error("Nieoczekiwany błąd podczas usuwania pustych rekordów: {}", e.getMessage(), e);
+            return ResponseEntity.internalServerError()
+                    .body(TweetProcessingService.CleanupResult.builder()
+                            .deletedRecords(0)
+                            .success(false)
+                            .message("Nieoczekiwany błąd: " + e.getMessage())
+                            .build());
+        }
+    }
+
+    // =======================================
+    // SEKCJA 3: EKSPORT I ZARZĄDZANIE DANYMI
+    // =======================================
+
+    /**
+     * Eksportuje przetworzone tweety do pliku CSV
+     * Pozwala na określenie nazwy pliku wyjściowego
+     *
+     * @param filename nazwa pliku CSV (domyślnie: "processed_tweets.csv")
+     * @return ResponseEntity z ścieżką do utworzonego pliku
+     */
+    @PostMapping("/export-csv")
+    public ResponseEntity<String> exportToCsv(
+            @RequestParam(defaultValue = "processed_tweets.csv") String filename) {
+        log.info("Rozpoczynam eksport do pliku CSV: {}", filename);
+
+        try {
+            String filePath = processingService.exportToCsv(filename);
+            log.info("Eksport zakończony pomyślnie: {}", filePath);
+            return ResponseEntity.ok("Eksport zakończony: " + filePath);
+
+        } catch (IOException e) {
+            log.error("Błąd podczas eksportu do CSV: {}", e.getMessage(), e);
+            return ResponseEntity.internalServerError()
+                    .body("Błąd podczas eksportu: " + e.getMessage());
+        }
+    }
+}

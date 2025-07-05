@@ -59,6 +59,8 @@ public class Tweet {
     private LocalDateTime creationDate;
     @Column(name = "update_date", nullable = false)
     private LocalDateTime updateDate;
+    @Column(name = "needs_refresh", nullable = false)
+    private boolean needsRefresh = true;
 
     @Override
     public boolean equals(Object o) {
