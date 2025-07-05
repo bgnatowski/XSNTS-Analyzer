@@ -10,7 +10,7 @@ import lombok.Data;
 @Builder
 public class ProcessingStats {
     private Long totalTweets;
-    private Long processedTweets;
+    private Long normalizedTweets;
     private Long averageTokensPerTweet;
     private Double processingProgress;
 }

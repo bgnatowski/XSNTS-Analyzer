@@ -22,13 +22,13 @@ public class ProcessingStatsCalculator {
      */
     public ProcessingStats calculateStats() {
         long totalTweets = tweetRepository.count();
-        long processedTweets = processedTweetRepository.count();
+        long normalizedTweets = processedTweetRepository.count();
         long averageTokens = calculateAverageTokens();
-        double processingProgress = calculateProgress(processedTweets, totalTweets);
+        double processingProgress = calculateProgress(normalizedTweets, totalTweets);
 
         return ProcessingStats.builder()
                 .totalTweets(totalTweets)
-                .processedTweets(processedTweets)
+                .normalizedTweets(normalizedTweets)
                 .averageTokensPerTweet(averageTokens)
                 .processingProgress(processingProgress)
                 .build();

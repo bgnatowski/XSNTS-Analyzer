@@ -1,131 +1,302 @@
 package pl.bgnat.master.xscrapper.service.normalization;
 
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import pl.bgnat.master.xscrapper.dto.NormalizedTweet;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
 import java.text.Normalizer;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+/**
+ * Komponent odpowiedzialny za normalizację i tokenizację tekstu tweetów.
+ * <p>
+ * Implementuje proces wstępnego przetwarzania tekstu zgodnie z najlepszymi praktykami
+ * dla analizy treści mediów społecznościowych, w szczególności Twittera/X.
+ *
+ * @author Bartosz Gnatowski
+ * @version 1.3
+ * @since 2025
+ */
+@Slf4j
 @Component
 public class TextNormalizer {
 
-    private final Set<String> stopWords;
+    // ========================================
+    // STAŁE KONFIGURACYJNE
+    // ========================================
+
+    private static final String USER_PLACEHOLDER = " USER ";
+    private static final String NUMBER_PLACEHOLDER = " NUMBER ";
+    private static final int MIN_TOKEN_LENGTH = 1;
+
+    // ========================================
+    // WZORCE REGEX DLA NORMALIZACJI
+    // ========================================
+
     private final Pattern urlPattern;
     private final Pattern mentionPattern;
     private final Pattern hashtagPattern;
     private final Pattern numberPattern;
     private final Pattern punctuationPattern;
     private final Pattern whitespacePattern;
+    private final Pattern emoticonsPattern;
+
+    // ========================================
+    // KONFIGURACJA I DANE
+    // ========================================
+
+    private final Set<String> stopWords;
+    private final StopWordsManager stopWordsManager;
+    private final PatternMatcher patternMatcher;
+
+    @Value("${app.nlp.min-token-length:1}")
+    private int minTokenLength;
+
+    @Value("${app.nlp.preserve-hashtag-content:true}")
+    private boolean preserveHashtagContent;
 
     public TextNormalizer() {
-        this.stopWords = loadStopWords();
-        urlPattern = Pattern.compile("https?://\\S+|www\\.\\S+");
-        mentionPattern = Pattern.compile("@\\w+");
-        hashtagPattern = Pattern.compile("#\\w+");
-        numberPattern = Pattern.compile("\\d+");
-        punctuationPattern = Pattern.compile("[^\\p{L}\\p{N}\\s]");
-        whitespacePattern = Pattern.compile("\\s+");
+        log.info("Inicjalizacja TextNormalizer - rozpoczynam ładowanie wzorców i słów stop");
+
+        this.stopWordsManager = new StopWordsManager();
+        this.patternMatcher = new PatternMatcher();
+
+        this.stopWords = stopWordsManager.loadStopWords();
+        this.urlPattern = patternMatcher.createUrlPattern();
+        this.mentionPattern = patternMatcher.createMentionPattern();
+        this.hashtagPattern = patternMatcher.createHashtagPattern();
+        this.numberPattern = patternMatcher.createNumberPattern();
+        this.punctuationPattern = patternMatcher.createPunctuationPattern();
+        this.whitespacePattern = patternMatcher.createWhitespacePattern();
+        this.emoticonsPattern = patternMatcher.createEmoticonsPattern();
+
+        log.info("TextNormalizer zainicjalizowany. Załadowano {} słów stop", stopWords.size());
     }
 
-    private Set<String> loadStopWords() {
-        Set<String> stopWords = new HashSet<>();
+    // ========================================
+    // GŁÓWNE METODY PUBLICZNE
+    // ========================================
 
-        // Podstawowe polskie stop words
-        String[] basicStopWords = {
-                "i", "w", "z", "na", "do", "o", "że", "się", "nie", "to", "ta", "te",
-                "ja", "ty", "on", "ona", "ono", "my", "wy", "oni", "one",
-                "jest", "są", "był", "była", "było", "były", "będzie", "będą",
-                "a", "ale", "oraz", "lub", "bo", "więc", "jak", "czy", "gdy",
-                "dla", "po", "przez", "pod", "nad", "bez", "przy", "od", "za"
-        };
-
-        Collections.addAll(stopWords, basicStopWords);
-
-        try (BufferedReader reader = new BufferedReader(
-                new InputStreamReader(
-                        getClass().getResourceAsStream("/stopwords_pl.txt"),
-                        StandardCharsets.UTF_8))) {
-
-            if (reader != null) {
-                reader.lines()
-                        .map(String::trim)
-                        .filter(line -> !line.isEmpty() && !line.startsWith("#"))
-                        .forEach(stopWords::add);
-            }
-        } catch (IOException | NullPointerException e) {
-            // Jeśli nie ma pliku, używamy podstawowego zestawu
-            System.out.println("Używam podstawowego zestawu stop words");
-        }
-
-        return stopWords;
-    }
-
+    /**
+     * Normalizuje tekst tweeta usuwając hałas i standaryzując format.
+     * <p>
+     * Proces normalizacji obejmuje:
+     * 1. Usuwanie URL-i
+     * 2. Normalizację wzmianek (@username)
+     * 3. Przetwarzanie hashtagów
+     * 4. Zamianę liczb na placeholdery
+     * 5. Konwersję na małe litery
+     * 6. Normalizację znaków Unicode
+     * 7. Usuwanie interpunkcji
+     * 8. Normalizację białych znaków
+     *
+     * @param text tekst do normalizacji
+     * @return znormalizowany tekst
+     */
     public String normalizeText(String text) {
-        if (text == null || text.trim().isEmpty()) {
+        if (!isValidInput(text)) {
+            log.debug("Otrzymano pusty lub null tekst do normalizacji");
             return "";
         }
 
-        // 1. Usuwanie URL-i
-        text = urlPattern.matcher(text).replaceAll(" ");
+        log.debug("Rozpoczynam normalizację tekstu o długości: {}", text.length());
 
-        // 2. Zastępowanie wzmianek placeholderem
-        text = mentionPattern.matcher(text).replaceAll(" USER ");
+        String normalized = text;
 
-        // 3. Usuwanie hashtagów ale zostawianie tekstu
-        text = hashtagPattern.matcher(text).replaceAll(match ->
-                " " + match.group().substring(1) + " ");
+        // Krok 1: Usunięcie URL-i (zgodnie z zaleceniami literatury NLP dla social media)
+        normalized = removeUrls(normalized);
 
-        // 4. Zastępowanie liczb placeholderem
-        text = numberPattern.matcher(text).replaceAll(" NUMBER ");
+        // Krok 2: Normalizacja wzmianek użytkowników
+        normalized = normalizeMentions(normalized);
 
-        // 5. Konwersja na małe litery
-        text = text.toLowerCase();
+        // Krok 3: Przetwarzanie hashtagów
+        normalized = processHashtags(normalized);
 
-        // 6. Normalizacja znaków diakrytycznych (opcjonalne - zachowuje polskie znaki)
-        text = Normalizer.normalize(text, Normalizer.Form.NFC);
+        // Krok 4: Normalizacja liczb
+        normalized = normalizeNumbers(normalized);
 
-        // 7. Usuwanie interpunkcji
-        text = punctuationPattern.matcher(text).replaceAll(" ");
+        // Krok 5: Przetwarzanie emotikonów
+        normalized = processEmoticons(normalized);
 
-        // 8. Normalizacja białych znaków
-        text = whitespacePattern.matcher(text).replaceAll(" ");
+        // Krok 6: Konwersja na małe litery
+        normalized = normalized.toLowerCase();
 
-        return text.trim();
+        // Krok 7: Normalizacja Unicode
+        normalized = normalizeUnicode(normalized);
+
+        // Krok 8: Usunięcie interpunkcji
+        normalized = removePunctuation(normalized);
+
+        // Krok 9: Normalizacja białych znaków
+        normalized = normalizeWhitespace(normalized);
+
+        log.debug("Zakończono normalizację. Długość po przetworzeniu: {}", normalized.length());
+        return normalized.trim();
     }
 
+    /**
+     * Tokenizuje znormalizowany tekst na listę tokenów.
+     * <p>
+     * Proces tokenizacji obejmuje:
+     * 1. Podział tekstu na tokeny
+     * 2. Filtrowanie tokenów minimalnej długości
+     * 3. Usuwanie słów stop
+     * 4. Walidację wynikowych tokenów
+     *
+     * @param normalizedText znormalizowany tekst do tokenizacji
+     * @return lista tokenów
+     */
     public List<String> tokenize(String normalizedText) {
-        if (normalizedText == null || normalizedText.trim().isEmpty()) {
+        if (!isValidInput(normalizedText)) {
+            log.debug("Otrzymano pusty tekst do tokenizacji");
             return new ArrayList<>();
         }
 
-        return Arrays.stream(normalizedText.split("\\s+"))
-                .filter(token -> !token.isEmpty())
-                .filter(token -> token.length() > 1) // Usuwanie pojedynczych znaków
-                .filter(token -> !stopWords.contains(token))
+        log.debug("Rozpoczynam tokenizację tekstu");
+
+        List<String> tokens = Arrays.stream(normalizedText.split("\\s+"))
+                .filter(this::isValidToken)
+                .filter(this::isNotStopWord)
                 .collect(Collectors.toList());
+
+        log.debug("Tokenizacja zakończona. Wygenerowano {} tokenów", tokens.size());
+        return tokens;
     }
 
+    /**
+     * Wykonuje pełen proces normalizacji i tokenizacji tekstu.
+     *
+     * @param text tekst do przetworzenia
+     * @return obiekt NormalizedTweet z wynikami przetwarzania
+     */
     public NormalizedTweet processText(String text) {
-        String normalized = normalizeText(text);
-        List<String> tokens = tokenize(normalized);
+        validateProcessingInput(text);
 
-        return NormalizedTweet.builder()
-                .normalizedContent(normalized)
-                .tokens(tokens)
-                .tokenCount(tokens.size())
-                .build();
+        log.debug("Rozpoczynam pełne przetwarzanie tekstu");
+
+        try {
+            String normalized = normalizeText(text);
+            List<String> tokens = tokenize(normalized);
+
+            NormalizedTweet result = NormalizedTweet.builder()
+                    .normalizedContent(normalized)
+                    .tokens(tokens)
+                    .tokenCount(tokens.size())
+                    .build();
+
+            log.debug("Przetwarzanie zakończone pomyślnie. Tokens: {}", tokens.size());
+            return result;
+
+        } catch (Exception e) {
+            log.error("Błąd podczas przetwarzania tekstu: {}", e.getMessage(), e);
+            return createEmptyResult();
+        }
     }
 
-    @lombok.Builder
-    @lombok.Data
-    public static class NormalizedTweet {
-        private String normalizedContent;
-        private List<String> tokens;
-        private Integer tokenCount;
+    // ========================================
+    // METODY NORMALIZACJI - PRYWATNE
+    // ========================================
+
+    /**
+     * Usuwa URL-e z tekstu zastępując je spacją.
+     * URLs w tweetach nie niosą wartości semantycznej dla analizy treści.
+     */
+    private String removeUrls(String text) {
+        return urlPattern.matcher(text).replaceAll(" ");
+    }
+
+    /**
+     * Normalizuje wzmianki użytkowników (@username) zastępując je placeholderem USER.
+     * Zachowuje informację o wzmiankach bez ujawniania konkretnych nazw użytkowników.
+     */
+    private String normalizeMentions(String text) {
+        return mentionPattern.matcher(text).replaceAll(USER_PLACEHOLDER);
+    }
+
+    /**
+     * Przetwarza hashtagi - usuwa # ale zachowuje treść hashtaga.
+     * Hashtagi często zawierają ważne słowa kluczowe dla analizy sentymentu.
+     */
+    private String processHashtags(String text) {
+        if (preserveHashtagContent) {
+            return hashtagPattern.matcher(text).replaceAll(match ->
+                    " " + match.group().substring(1) + " ");
+        } else {
+            return hashtagPattern.matcher(text).replaceAll(" ");
+        }
+    }
+
+    /**
+     * Zastępuje liczby placeholderem NUMBER.
+     * Konkretne wartości liczbowe rzadko mają znaczenie dla analizy sentymentu.
+     */
+    private String normalizeNumbers(String text) {
+        return numberPattern.matcher(text).replaceAll(NUMBER_PLACEHOLDER);
+    }
+
+    /**
+     * Przetwarza emotikony zgodnie z specyfiką social media.
+     * Emotikony mogą być ważne dla analizy sentymentu.
+     */
+    private String processEmoticons(String text) {
+        // Podstawowe emotikony są zachowywane jako tokeny
+        return text;
+    }
+
+    /**
+     * Normalizuje znaki Unicode zachowując polskie znaki diakrytyczne.
+     */
+    private String normalizeUnicode(String text) {
+        return Normalizer.normalize(text, Normalizer.Form.NFC);
+    }
+
+    /**
+     * Usuwa interpunkcję zachowując litery, cyfry i spacje.
+     */
+    private String removePunctuation(String text) {
+        return punctuationPattern.matcher(text).replaceAll(" ");
+    }
+
+    /**
+     * Normalizuje białe znaki zastępując wielokrotne spacje pojedynczą spacją.
+     */
+    private String normalizeWhitespace(String text) {
+        return whitespacePattern.matcher(text).replaceAll(" ");
+    }
+
+    // ========================================
+    // METODY WALIDACJI I POMOCNICZE
+    // ========================================
+
+    private boolean isValidInput(String text) {
+        return text != null && !text.trim().isEmpty();
+    }
+
+    private boolean isValidToken(String token) {
+        return !token.isEmpty() && token.length() > minTokenLength;
+    }
+
+    private boolean isNotStopWord(String token) {
+        return !stopWords.contains(token.toLowerCase());
+    }
+
+    private void validateProcessingInput(String text) {
+        if (text == null) {
+            throw new IllegalArgumentException("Tekst do przetworzenia nie może być null");
+        }
+    }
+
+    private NormalizedTweet createEmptyResult() {
+        return NormalizedTweet.builder()
+                .normalizedContent("")
+                .tokens(new ArrayList<>())
+                .tokenCount(0)
+                .build();
     }
 }

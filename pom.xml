@@ -86,6 +86,12 @@
             <artifactId>kafka-clients</artifactId>
             <version>${kafka.version}</version>
         </dependency>
+        <dependency>
+            <groupId>com.github.pemistahl</groupId>
+            <artifactId>lingua</artifactId>
+            <version>1.2.2</version>
+        </dependency>
+
         <!--        TESTS -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

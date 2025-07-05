@@ -1,8 +1,10 @@
 package pl.bgnat.master.xscrapper.service.scrapper;
 
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.openqa.selenium.chrome.ChromeDriver;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import pl.bgnat.master.xscrapper.config.scrapper.CredentialProperties;
 import pl.bgnat.master.xscrapper.dto.UserCredential;
@@ -12,6 +14,7 @@ import pl.bgnat.master.xscrapper.pages.LoginPage;
 import pl.bgnat.master.xscrapper.pages.WallPage;
 import pl.bgnat.master.xscrapper.pages.WallPage.WallType;
 
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -71,7 +74,24 @@ public class ScrapperService {
         }
     }
 
-//    @Scheduled(cron = "0 0 */3 * * *")
+//    @Scheduled(cron = "0 0 */6 * * *")
+    public void scheduledAlternatingScrape() {
+        int hour = LocalDateTime.now().getHour();
+        int index = (hour / 6) % 3;
+
+        switch (index) {
+            case 0:
+                scheduledScrapePopularKeywords();
+                break;
+            case 1:
+                scheduledScrapeLatestKeywords();
+                break;
+            case 2:
+                scheduledScrapeForYouWallAsync();
+                break;
+        }
+    }
+
 //    @PostConstruct
     public void scheduledScrapePopularKeywords() {
         do {
@@ -82,7 +102,6 @@ public class ScrapperService {
         waitRandom();
     }
 
-//    @Scheduled(cron = "0 0 */4 * * *")
     public void scheduledScrapeLatestKeywords() {
         do {
             updateTrendingKeywords();
@@ -92,7 +111,6 @@ public class ScrapperService {
         waitRandom();
     }
 
-//    @PostConstruct
     private void scrapeOneByKeyword() {
         String keyword = "konklawa";
         WallType wallType = LATEST;
@@ -277,18 +295,18 @@ public class ScrapperService {
         lista1.add("afera");
 
         ArrayList<String> hashtagiWybory2025 = new ArrayList<>();
-        hashtagiWybory2025.add("#wybory2025");
-        hashtagiWybory2025.add("#wybory");
-        hashtagiWybory2025.add("#głosowanie");
-        hashtagiWybory2025.add("#polska");
-        hashtagiWybory2025.add("#vote");
-        hashtagiWybory2025.add("#poland");
         hashtagiWybory2025.add("#Trzaskowski2025");
         hashtagiWybory2025.add("#Nawrocki2025");
         hashtagiWybory2025.add("#Mentzen2025");
         hashtagiWybory2025.add("#Hołownia2025");
         hashtagiWybory2025.add("#KobietyzTrzaskiem");
         hashtagiWybory2025.add("#NormalnaPolska");
+        hashtagiWybory2025.add("#wybory2025");
+        hashtagiWybory2025.add("#wybory");
+        hashtagiWybory2025.add("#głosowanie");
+        hashtagiWybory2025.add("#polska");
+        hashtagiWybory2025.add("#vote");
+        hashtagiWybory2025.add("#poland");
         hashtagiWybory2025.add("#PoPierwszePolska");
         hashtagiWybory2025.add("#CałaPolskaNaprzód");
         hashtagiWybory2025.add("#DebataPrezydencka");
@@ -374,7 +392,7 @@ public class ScrapperService {
         lista4.add("dziadek z Wermachtu");
         lista4.add("brutalizacja kampanii");
         lista4.add("hejt");
-        lista4.add("");
+        lista4.add("prezydent");
         lista4.add("zamordyzm pandemiczny");
         lista4.add("eurokołchoz");
         lista4.add("antyamerykańskość");
@@ -434,7 +452,7 @@ public class ScrapperService {
         lista5.add("Kijów");
         lista5.add("#gangłysego");
 
-        currentTrendingKeyword = hashtagiWybory2025;
+        currentTrendingKeyword = lista2;
     }
 
 //    private void updateTrendingKeywords() {

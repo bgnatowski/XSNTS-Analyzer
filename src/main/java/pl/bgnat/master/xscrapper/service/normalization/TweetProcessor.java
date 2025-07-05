@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import pl.bgnat.master.xscrapper.dto.NormalizedTweet;
 import pl.bgnat.master.xscrapper.model.ProcessedTweet;
 import pl.bgnat.master.xscrapper.model.Tweet;
 import pl.bgnat.master.xscrapper.repository.ProcessedTweetRepository;
@@ -47,7 +48,7 @@ public class TweetProcessor {
         }
 
         try {
-            TextNormalizer.NormalizedTweet result = textNormalizer.processText(tweet.getContent());
+            NormalizedTweet result = textNormalizer.processText(tweet.getContent());
 
             return ProcessedTweet.builder()
                     .originalTweet(tweet)
