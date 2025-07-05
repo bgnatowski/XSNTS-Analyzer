@@ -511,7 +511,7 @@ public class MalletTopicModelingService {
                 .build();
     }
 
-    private static class Document {
+    public static class Document {
         private final String id;
         private final String text;
         private final List<Long> tweetIds;
