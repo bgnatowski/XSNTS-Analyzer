@@ -23,6 +23,7 @@ public class TopicModelingResponse {
     private String status;
     private List<TopicSummary> topics;
 
+
     @Data
     @Builder
     public static class TopicSummary {
@@ -31,6 +32,12 @@ public class TopicModelingResponse {
         private List<WordWeight> topWords;
         private Integer documentCount;
         private Double averageProbability;
+
+        private Double pmiCoherence;
+        private Double npmiCoherence;
+        private Double uciCoherence;
+        private Double umassCoherence;
+
     }
 
     @Data

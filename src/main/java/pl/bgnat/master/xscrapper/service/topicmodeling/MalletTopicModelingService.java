@@ -15,6 +15,7 @@ import pl.bgnat.master.xscrapper.dto.TopicModelingRequest;
 import pl.bgnat.master.xscrapper.dto.TopicModelingResponse;
 import pl.bgnat.master.xscrapper.model.*;
 import pl.bgnat.master.xscrapper.repository.*;
+import pl.bgnat.master.xscrapper.service.topicmodeling.metrics.TopicMetricsService;
 
 import java.io.File;
 import java.io.IOException;
@@ -35,6 +36,7 @@ public class MalletTopicModelingService {
     private final DocumentTopicAssignmentRepository documentTopicAssignmentRepository;
     private final ObjectMapper objectMapper;
 
+    private final TopicMetricsService topicMetricsService;
     private final HashtagPoolingStrategy hashtagPoolingStrategy;
     private final TemporalPoolingStrategy temporalPoolingStrategy;
 
@@ -267,7 +269,8 @@ public class MalletTopicModelingService {
                                        List<Document> documents, Map<String, List<ProcessedTweet>> groupedTweets) {
         log.info("Wyciągam i zapisuję wyniki modelu");
 
-        saveTopicResults(model, modelResult);
+
+        saveTopicResults(model, modelResult, documents);
         saveDocumentAssignments(model, modelResult, documents);
         updateTopicStatistics(modelResult);
 
@@ -341,7 +344,7 @@ public class MalletTopicModelingService {
         }
     }
 
-    private void saveTopicResults(ParallelTopicModel model, TopicModelingResult modelResult) {
+    private void saveTopicResults(ParallelTopicModel model, TopicModelingResult modelResult, List<Document> documents) {
         Alphabet alphabet = model.getAlphabet();
 
         for (int topicId = 0; topicId < model.getNumTopics(); topicId++) {
@@ -365,6 +368,12 @@ public class MalletTopicModelingService {
 
             String topicLabel = generateTopicLabel(topWords);
 
+            List<List<String>> docTokens = documents.stream()
+                    .map(d -> Arrays.asList(d.getText().split("\\s+")))
+                    .toList();
+            TopicMetricsService.MetricsContext metricsCtx = topicMetricsService.buildContext(docTokens);
+            TopicMetricsService.TopicMetrics metrics = topicMetricsService.computeMetrics(topWords, metricsCtx);
+
             try {
                 TopicResult topicResult = TopicResult.builder()
                         .topicModelingResult(modelResult)
@@ -374,6 +383,10 @@ public class MalletTopicModelingService {
                         .wordCount(sortedWords.size())
                         .documentCount(0)
                         .averageProbability(0.0)
+                        .pmiCoherence(metrics.pmi())
+                        .npmiCoherence(metrics.npmi())
+                        .uciCoherence(metrics.uci())
+                        .umassCoherence(metrics.umass())
                         .build();
 
                 topicResultRepository.save(topicResult);
@@ -508,6 +521,10 @@ public class MalletTopicModelingService {
                 .topWords(topWords)
                 .documentCount(topicResult.getDocumentCount())
                 .averageProbability(topicResult.getAverageProbability())
+                .pmiCoherence(topicResult.getPmiCoherence())
+                .npmiCoherence(topicResult.getNpmiCoherence())
+                .uciCoherence(topicResult.getUciCoherence())
+                .umassCoherence(topicResult.getUmassCoherence())
                 .build();
     }
 

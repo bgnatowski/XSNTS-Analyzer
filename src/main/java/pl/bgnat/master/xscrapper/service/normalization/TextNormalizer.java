@@ -110,7 +110,7 @@ public class TextNormalizer {
         normalized = removeUrls(normalized);
 
         // Krok 2: Normalizacja wzmianek użytkowników
-        normalized = normalizeMentions(normalized);
+//        normalized = normalizeMentions(normalized);
 
         // Krok 3: Przetwarzanie hashtagów
 //        normalized = processHashtags(normalized);

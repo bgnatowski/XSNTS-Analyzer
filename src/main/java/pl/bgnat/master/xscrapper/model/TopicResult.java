@@ -42,4 +42,17 @@ public class TopicResult {
 
     @Column(name = "average_probability")
     private Double averageProbability;
+
+    @Column(name = "pmi_coherence")
+    private Double pmiCoherence;       // UCI-PMI (avg PMI)
+
+    @Column(name = "npmi_coherence")
+    private Double npmiCoherence;      // NPMI
+
+    @Column(name = "uci_coherence")
+    private Double uciCoherence;       // UCI
+
+    @Column(name = "umass_coherence")
+    private Double umassCoherence;     // UMass
+
 }
