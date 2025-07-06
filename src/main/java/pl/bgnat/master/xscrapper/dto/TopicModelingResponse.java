@@ -18,10 +18,14 @@ public class TopicModelingResponse {
     private Integer documentsCount;
     private Integer originalTweetsCount;
     private LocalDateTime trainingDate;
-    private Double coherenceScore;
     private Double perplexity;
     private String status;
     private List<TopicSummary> topics;
+
+    private Double pmiScore;        // PMI
+    private Double npmiScore;       // Normalized PMI
+    private Double uciScore;        // UMass Coherence Index
+    private String coherenceInterpretation; // Tekstowa interpretacja
 
 
     @Data
@@ -32,12 +36,6 @@ public class TopicModelingResponse {
         private List<WordWeight> topWords;
         private Integer documentCount;
         private Double averageProbability;
-
-        private Double pmiCoherence;
-        private Double npmiCoherence;
-        private Double uciCoherence;
-        private Double umassCoherence;
-
     }
 
     @Data

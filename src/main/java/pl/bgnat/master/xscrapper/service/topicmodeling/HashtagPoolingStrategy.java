@@ -1,7 +1,5 @@
 package pl.bgnat.master.xscrapper.service.topicmodeling;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -13,77 +11,59 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
- * Strategia grupowania tweetów według hashtagów
- * Zgodnie z literaturą - najskuteczniejsza metoda dla topic modeling
+ * Grupuje tweety według hashtagów (bez znaku #, małe litery).
+ *  • Hashtagi krótsze niż 3 znaki są ignorowane.
+ *  • Tweety bez hashtagów trafiają do grup autora,
+ *    jeżeli autor ma ≥ minAuthorGroup.
  */
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class HashtagPoolingStrategy implements TweetPoolingStrategy {
 
-    private final ObjectMapper objectMapper;
-    private final Pattern hashtagPattern = Pattern.compile("#\\w+");
+    private static final Pattern HASH = Pattern.compile("#\\p{L}[\\p{L}\\p{N}_]{2,}");
+
+    private final int minAuthorGroup = 3; // konfiguracja – można wstrzyknąć z .yml
+
+    @Override public String getStrategyName() { return "hashtag"; }
 
     @Override
-    public Map<String, List<ProcessedTweet>> poolTweets(List<ProcessedTweet> processedTweets) {
-        log.info("Rozpoczynam groupowanie {} tweetów według hashtagów", processedTweets.size());
+    public Map<String, List<ProcessedTweet>> poolTweets(List<ProcessedTweet> tweets) {
 
-        Map<String, List<ProcessedTweet>> hashtagGroups = new HashMap<>();
-        List<ProcessedTweet> noHashtagTweets = new ArrayList<>();
+        Map<String, List<ProcessedTweet>> groups = new HashMap<>();
+        List<ProcessedTweet> noHash = new ArrayList<>();
 
-        for (ProcessedTweet tweet : processedTweets) {
-            Set<String> hashtags = extractHashtags(tweet);
+        for (ProcessedTweet pt : tweets) {
 
-            if (hashtags.isEmpty()) {
-                noHashtagTweets.add(tweet);
-            } else {
-                for (String hashtag : hashtags) {
-                    hashtagGroups.computeIfAbsent(hashtag, k -> new ArrayList<>()).add(tweet);
-                }
-            }
+            Set<String> tags = extract(pt.getOriginalTweet().getContent());
+
+            if (tags.isEmpty()) noHash.add(pt);
+            else tags.forEach(tag ->
+                    groups.computeIfAbsent(tag, k -> new ArrayList<>()).add(pt));
         }
 
-        // Grupowanie tweetów bez hashtagów według autorów
-        groupTweetsWithoutHashtags(noHashtagTweets, hashtagGroups);
+        // fallback — grupowanie wg autora
+        Map<String, List<ProcessedTweet>> authors = noHash.stream()
+                .collect(Collectors.groupingBy(t -> t.getOriginalTweet().getUsername()));
 
-        log.info("Utworzono {} grup hashtagów", hashtagGroups.size());
-        return hashtagGroups;
-    }
-
-    @Override
-    public String getStrategyName() {
-        return "hashtag";
-    }
-
-    private Set<String> extractHashtags(ProcessedTweet tweet) {
-        Set<String> hashtags = new HashSet<>();
-
-        // Wyciągnij hashtagi z oryginalnej treści
-        String originalContent = tweet.getOriginalTweet().getContent();
-        if (originalContent != null) {
-            Matcher matcher = hashtagPattern.matcher(originalContent);
-            while (matcher.find()) {
-                String hashtag = matcher.group().toLowerCase().substring(1); // Usuń # i konwertuj na małe litery
-                if (hashtag.length() > 2) { // Tylko hashtagi o długości > 2 znaki
-                    hashtags.add(hashtag);
-                }
+        authors.forEach((user, list) -> {
+            if (list.size() >= minAuthorGroup) {
+                groups.put("author_" + user.toLowerCase(), list);
             }
-        }
+        });
 
-        return hashtags;
+        log.info("Pooling zakończony: {} grup hashtagów, {} tweetów bez hashtaga.",
+                groups.size(), noHash.size());
+        return groups;
     }
 
-    private void groupTweetsWithoutHashtags(List<ProcessedTweet> noHashtagTweets,
-                                            Map<String, List<ProcessedTweet>> hashtagGroups) {
-        // Grupuj tweety bez hashtagów według autorów
-        Map<String, List<ProcessedTweet>> authorGroups = noHashtagTweets.stream()
-                .collect(Collectors.groupingBy(tweet -> tweet.getOriginalTweet().getUsername()));
+    /* ------- helpers ------- */
 
-        for (Map.Entry<String, List<ProcessedTweet>> entry : authorGroups.entrySet()) {
-            if (entry.getValue().size() >= 3) { // Tylko autorzy z przynajmniej 3 tweetami
-                String groupKey = "author_" + entry.getKey();
-                hashtagGroups.put(groupKey, entry.getValue());
-            }
-        }
+    private Set<String> extract(String content) {
+        if (content == null) return Set.of();
+        Matcher m = HASH.matcher(content);
+        Set<String> tags = new HashSet<>();
+        while (m.find()) tags.add(m.group().substring(1).toLowerCase());
+        return tags;
     }
 }

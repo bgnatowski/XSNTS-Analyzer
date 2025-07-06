@@ -24,6 +24,4 @@ public interface TopicModelingResultRepository extends JpaRepository<TopicModeli
     @Query("SELECT COUNT(tmr) FROM TopicModelingResult tmr WHERE tmr.trainingDate >= :startDate")
     Long countModelsTrainedSince(@Param("startDate") LocalDateTime startDate);
 
-    @Query("SELECT tmr FROM TopicModelingResult tmr WHERE tmr.coherenceScore IS NOT NULL ORDER BY tmr.coherenceScore DESC")
-    List<TopicModelingResult> findAllOrderByCoherenceScoreDesc();
 }

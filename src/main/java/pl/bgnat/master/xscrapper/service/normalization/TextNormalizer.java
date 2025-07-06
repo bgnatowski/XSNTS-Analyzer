@@ -116,7 +116,7 @@ public class TextNormalizer {
 //        normalized = processHashtags(normalized);
 
         // Krok 4: Normalizacja liczb
-        normalized = normalizeNumbers(normalized);
+//        normalized = normalizeNumbers(normalized);
 
         // Krok 5: Przetwarzanie emotikonów
         normalized = processEmoticons(normalized);

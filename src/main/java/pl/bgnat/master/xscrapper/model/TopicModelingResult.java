@@ -37,17 +37,28 @@ public class TopicModelingResult {
     @Column(name = "pooling_strategy", nullable = false)
     private String poolingStrategy; // "hashtag", "author", "temporal"
 
+    @Builder.Default
     @Column(name = "documents_count", nullable = false)
-    private Integer documentsCount; // Liczba dokumentów po poolingu
+    private Integer documentsCount = 0;
 
+    @Builder.Default
     @Column(name = "original_tweets_count", nullable = false)
-    private Integer originalTweetsCount; // Liczba oryginalnych tweetów
+    private Integer originalTweetsCount = 0;
 
     @Column(name = "training_date", nullable = false)
     private LocalDateTime trainingDate;
 
-    @Column(name = "coherence_score")
-    private Double coherenceScore; // PMI score
+    @Column(name = "pmi")
+    private Double pmi;
+
+    @Column(name = "npmi")
+    private Double npmi;
+
+    @Column(name = "uci")
+    private Double uci;
+
+    @Column(name = "coherenceInterpretation")
+    private String coherenceInterpretation;
 
     @Column(name = "perplexity")
     private Double perplexity;

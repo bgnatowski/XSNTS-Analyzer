@@ -1,5 +1,7 @@
 package pl.bgnat.master.xscrapper.repository;
 
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -57,5 +59,12 @@ public interface ProcessedTweetRepository extends JpaRepository<ProcessedTweet, 
     @Transactional
     @Query("DELETE FROM ProcessedTweet pt WHERE pt.id IN :ids")
     int deleteByIds(@Param("ids") List<Long> ids);
+
+    @Query("SELECT pt FROM ProcessedTweet pt ORDER BY pt.processedDate DESC")
+    List<ProcessedTweet> findTop50000ByOrderByProcessedDateDesc(Pageable pageable);
+
+    default List<ProcessedTweet> findTop50000ByOrderByProcessedDateDesc() {
+        return findTop50000ByOrderByProcessedDateDesc(PageRequest.of(0, 50000));
+    }
 
 }
