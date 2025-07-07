@@ -41,7 +41,7 @@ public class LoginPage extends BasePage {
             WebElement btn = waitForElement(cookiesLocator);
             btn.click();
         } catch (Exception e) {
-            // Jeśli przycisk nie zostanie znaleziony, pomijamy - być może już został zaakceptowany
+            // Jeśli przycisk nie zostanie znaleziony, pomijam
         }
     }
 

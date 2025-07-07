@@ -2,6 +2,9 @@ package pl.bgnat.master.xscrapper.dto;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * DTO zawierające wartosci UserCredentiali i enum usera
+ */
 public record UserCredential(String username,
                              String email,
                              String password,

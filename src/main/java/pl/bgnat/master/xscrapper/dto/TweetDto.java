@@ -1,9 +1,13 @@
 package pl.bgnat.master.xscrapper.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import lombok.Builder;
 
 import java.time.LocalDateTime;
-
+/**
+ * DTO Tweeta
+ */
+@Builder
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record TweetDto(
         Long id,

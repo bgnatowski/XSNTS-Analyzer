@@ -29,7 +29,7 @@ public class TopicModelingResult {
     private Long id;
 
     @Column(name = "model_name", nullable = false)
-    private String modelName; // Nazwa modelu, np. "LDA_20_topics_hashtag_pooling"
+    private String modelName;
 
     @Column(name = "number_of_topics", nullable = false)
     private Integer numberOfTopics;
@@ -64,7 +64,7 @@ public class TopicModelingResult {
     private Double perplexity;
 
     @Column(name = "model_path", length = 500)
-    private String modelPath; // Ścieżka do zapisanego modelu MALLET
+    private String modelPath;
 
     @Column(name = "status", nullable = false)
     @Enumerated(EnumType.STRING)

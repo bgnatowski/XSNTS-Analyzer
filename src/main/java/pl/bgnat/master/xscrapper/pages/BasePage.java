@@ -130,16 +130,6 @@ public abstract class BasePage {
         driver.navigate().refresh();
     }
 
-    private long calculateHeight(){
-        Object expectedHeight = ((ChromeDriver) driver).executeScript("return document.body.scrollHeight");
-        long newHeight = 0L;
-        if (expectedHeight instanceof Long) {
-            newHeight = (long) expectedHeight;
-        }
-        waitRandom();
-        return newHeight;
-    }
-
     protected void navigateRandomly(String keyword) {
         Random random = new Random();
         boolean useSendKeys = random.nextDouble() <= 0.6;
@@ -202,5 +192,15 @@ public abstract class BasePage {
             openSubPage(searchUrl);
         }
         waitRandom(2000, 5000);
+    }
+
+    private long calculateHeight(){
+        Object expectedHeight = ((ChromeDriver) driver).executeScript("return document.body.scrollHeight");
+        long newHeight = 0L;
+        if (expectedHeight instanceof Long) {
+            newHeight = (long) expectedHeight;
+        }
+        waitRandom();
+        return newHeight;
     }
 }

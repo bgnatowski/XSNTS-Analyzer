@@ -8,6 +8,9 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * DTO zawierające model response'a dla topic modelingu
+ */
 @Data
 @Builder
 public class TopicModelingResponse {
@@ -23,9 +26,9 @@ public class TopicModelingResponse {
     private List<TopicSummary> topics;
 
     private Double pmiScore;        // PMI
-    private Double npmiScore;       // Normalized PMI
+    private Double npmiScore;       // NPMI (-1, 1)
     private Double uciScore;        // UMass Coherence Index
-    private String coherenceInterpretation; // Tekstowa interpretacja
+    private String coherenceInterpretation; // Tekstowa interpretacja wyniku pmi
 
 
     @Data

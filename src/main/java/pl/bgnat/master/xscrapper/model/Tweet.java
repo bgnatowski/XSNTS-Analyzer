@@ -51,7 +51,7 @@ public class Tweet {
     private Long views;
 
     @Column(name = "media_links")
-    private String mediaLinks;      // linki do zdjęć/gifów/nagrań (opcjonalnie w formie JSON lub rozbijać w osobnej tabeli do przemyslenia)
+    private String mediaLinks;      // linki do zdjęć/gifów/nagrań (opcjonalnie w formie JSON lub rozbijać w osobnej tabeli do tbd przemyslenia)
 
     @Column(name = "post_date", nullable = false)
     private LocalDateTime postDate;

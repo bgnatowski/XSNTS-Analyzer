@@ -29,7 +29,7 @@ public class TopicResult {
     private Integer topicId;
 
     @Column(name = "topic_label", length = 200)
-    private String topicLabel; // Automatycznie wygenerowana etykieta
+    private String topicLabel;
 
     @Column(name = "top_words", columnDefinition = "TEXT")
     private String topWords; // JSON z top słowami i ich wagami
@@ -44,15 +44,15 @@ public class TopicResult {
     private Double averageProbability;
 
     @Column(name = "pmi_coherence")
-    private Double pmiCoherence;       // UCI-PMI (avg PMI)
+    private Double pmiCoherence;
 
     @Column(name = "npmi_coherence")
-    private Double npmiCoherence;      // NPMI
+    private Double npmiCoherence;
 
     @Column(name = "uci_coherence")
-    private Double uciCoherence;       // UCI
+    private Double uciCoherence;
 
     @Column(name = "umass_coherence")
-    private Double umassCoherence;     // UMass
+    private Double umassCoherence;
 
 }

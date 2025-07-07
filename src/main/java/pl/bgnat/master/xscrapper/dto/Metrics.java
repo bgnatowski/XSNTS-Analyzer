@@ -2,6 +2,9 @@ package pl.bgnat.master.xscrapper.dto;
 
 import lombok.Data;
 
+/**
+ * DTO zawierające metricsy tweeta
+ */
 @Data
 public class Metrics {
     private final long replies;

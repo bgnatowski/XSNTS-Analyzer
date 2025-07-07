@@ -11,19 +11,7 @@ import java.util.List;
 @Data
 @Builder
 public class NormalizedTweet {
-
-    /**
-     * Znormalizowany tekst tweeta
-     */
     private String normalizedContent;
-
-    /**
-     * Lista tokenów wyekstraktowanych z tekstu
-     */
     private List<String> tokens;
-
-    /**
-     * Liczba tokenów
-     */
     private Integer tokenCount;
 }

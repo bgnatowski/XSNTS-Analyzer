@@ -15,9 +15,12 @@ import static org.springframework.util.StringUtils.hasLength;
 import static pl.bgnat.master.xscrapper.utils.TweetParser.*;
 import static pl.bgnat.master.xscrapper.utils.WaitUtils.waitRandom;
 
+/**
+ * Główna klasa widoku wall (popular, latest, fy) z ktorej scrapowane są tweety.
+ */
 @Slf4j
 public class WallPage extends BasePage {
-    private static final int MAX_TWEETS_PER_SCRAPE = 100;
+    private static final int MAX_TWEETS_PER_SCRAPE = 100; // przy większych ilościach częściej następują blokady
     private final UserCredential.User user;
 
     public enum WallType {

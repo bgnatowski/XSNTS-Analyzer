@@ -10,6 +10,9 @@ import pl.bgnat.master.xscrapper.utils.WaitUtils;
 
 import static pl.bgnat.master.xscrapper.utils.WaitUtils.waitRandom;
 
+/**
+ * Klasa pagea pojedynczego tweeta (do updatewania)
+ */
 @Slf4j
 public class TweetDetailPage extends BasePage {
     private static final By METRICS_GROUP_XPATH = By.xpath("//div[@role='group' and @aria-label]");
