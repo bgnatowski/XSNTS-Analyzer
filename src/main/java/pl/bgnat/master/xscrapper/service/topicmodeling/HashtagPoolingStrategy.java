@@ -23,7 +23,7 @@ public class HashtagPoolingStrategy implements TweetPoolingStrategy {
 
     private static final Pattern HASH = Pattern.compile("#\\p{L}[\\p{L}\\p{N}_]{2,}");
 
-    private final int minAuthorGroup = 3; // konfiguracja – można wstrzyknąć z .yml
+    private final int minAuthorGroup = 3;
 
     @Override public String getStrategyName() { return "hashtag"; }
 
@@ -56,8 +56,6 @@ public class HashtagPoolingStrategy implements TweetPoolingStrategy {
                 groups.size(), noHash.size());
         return groups;
     }
-
-    /* ------- helpers ------- */
 
     private Set<String> extract(String content) {
         if (content == null) return Set.of();

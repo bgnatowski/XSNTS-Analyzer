@@ -15,8 +15,7 @@ import pl.bgnat.master.xscrapper.dto.TopicModelingRequest;
 import pl.bgnat.master.xscrapper.dto.TopicModelingResponse;
 import pl.bgnat.master.xscrapper.model.*;
 import pl.bgnat.master.xscrapper.repository.*;
-import pl.bgnat.master.xscrapper.service.topicmodeling.metrics.TopicCoherenceCalculator;
-import pl.bgnat.master.xscrapper.service.topicmodeling.metrics.TopicCoherenceCalculator.CoherenceMetrics;
+import pl.bgnat.master.xscrapper.service.topicmodeling.TopicCoherenceCalculator.CoherenceMetrics;
 
 import java.io.File;
 import java.io.IOException;

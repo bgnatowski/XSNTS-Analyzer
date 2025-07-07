@@ -1,4 +1,4 @@
-package pl.bgnat.master.xscrapper.service.topicmodeling.metrics;
+package pl.bgnat.master.xscrapper.service.topicmodeling;
 
 import lombok.Builder;
 import lombok.Data;
@@ -10,17 +10,14 @@ import java.util.stream.Collectors;
 
 /**
  * Kalkulator zaawansowanych metryk koherencji tematów (PMI, NPMI, UCI)
- * zgodnie z literaturą (Mimno 2011, Röder 2015).
  */
 @Slf4j
 @Component
 public class TopicCoherenceCalculator {
 
-    /* =====================  API  ===================== */
-
     /**
      * Zwraca trzy metryki koherencji obliczone na podstawie
-     * listy słów-top (n-gramów) oraz zbioru dokumentów.
+     * listy topWords (n-gramów) oraz zbioru dokumentów.
      *
      * @param topWords   lista słów (kolejność ma znaczenie: najpierw top-N)
      * @param documents  lista dokumentów (pojedynczy dokument to ciąg tokenów
@@ -34,7 +31,7 @@ public class TopicCoherenceCalculator {
             return emptyMetrics();
         }
 
-        // 1. Zbuduj statystyki współ-wystąpień
+        // 1. Zbuduj statystyki współwystąpień
         WordCooccurrenceStats stats = buildStats(topWords, documents);
 
         // 2. Oblicz metryki
@@ -53,9 +50,6 @@ public class TopicCoherenceCalculator {
                 .build();
     }
 
-
-    /* =====================  IMPLEMENTACJA  ===================== */
-
     /** Oblicza średnią funkcji f dla wszystkich par (bez powtórzeń). */
     private double meanPairwise(List<String> words, ScoreFunction f) {
         double sum = 0;
@@ -72,14 +66,13 @@ public class TopicCoherenceCalculator {
         return pairs == 0 ? 0.0 : sum / pairs;
     }
 
-    /* ----------  Właściwe wzory  ---------- */
+    /* ----------  wzory  ---------- */
 
     private double pmi(String w1, String w2, WordCooccurrenceStats s) {
         double p12 = s.coProb(w1, w2);
         double p1  = s.prob(w1);
         double p2  = s.prob(w2);
-        return (p12 == 0 || p1 == 0 || p2 == 0) ? Double.NaN
-                : Math.log(p12 / (p1 * p2));
+        return (p12 == 0 || p1 == 0 || p2 == 0) ? Double.NaN : Math.log(p12 / (p1 * p2));
     }
 
     private double npmi(String w1, String w2, WordCooccurrenceStats s) {
@@ -89,12 +82,10 @@ public class TopicCoherenceCalculator {
         return Double.isFinite(val) ? val : Double.NaN;
     }
 
-    /** UMass / UCI coherence (log z poprawką +1). */
     private double uci(String w1, String w2, WordCooccurrenceStats s) {
         int d12 = s.coCount(w1, w2);
         int d2  = s.count(w2);
-        return d2 == 0 ? Double.NaN
-                : Math.log((d12 + 1.0) / d2);
+        return d2 == 0 ? Double.NaN : Math.log((d12 + 1.0) / d2);
     }
 
     /* ----------  Budowanie statystyk  ---------- */
@@ -126,8 +117,6 @@ public class TopicCoherenceCalculator {
         }
         return new WordCooccurrenceStats(wc, cc, docs.size());
     }
-
-    /* ----------  Struktury danych  ---------- */
 
     private interface ScoreFunction { double apply(String w1, String w2); }
 
@@ -161,7 +150,7 @@ public class TopicCoherenceCalculator {
         }
     }
 
-    /* Pakiet-prywatna klasa pomocnicza do statystyk */
+    /* Prywatna klasa pomocnicza do statystyk */
     static class WordCooccurrenceStats {
         private final Map<String, Integer> wordCounts;
         private final Map<String, Integer> coCounts;
@@ -176,12 +165,18 @@ public class TopicCoherenceCalculator {
         }
 
         /* Prawdopodobieństwo wystąpienia słowa */
-        double prob(String w) { return (double) count(w) / totalDocuments; }
+        double prob(String w) {
+            return (double) count(w) / totalDocuments;
+        }
 
-        /* Prawdopodobieństwo współ-wystąpienia pary słów */
-        double coProb(String w1, String w2) { return (double) coCount(w1, w2) / totalDocuments; }
+        /* Prawdopodobieństwo współwystąpienia pary słów */
+        double coProb(String w1, String w2) {
+            return (double) coCount(w1, w2) / totalDocuments;
+        }
 
-        int count(String w) { return wordCounts.getOrDefault(w, 0); }
+        int count(String w) {
+            return wordCounts.getOrDefault(w, 0);
+        }
 
         int coCount(String w1, String w2) {
             String key = w1.compareTo(w2) < 0 ? w1 + '|' + w2 : w2 + '|' + w1;

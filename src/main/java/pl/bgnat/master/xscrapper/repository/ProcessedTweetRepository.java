@@ -22,15 +22,12 @@ public interface ProcessedTweetRepository extends JpaRepository<ProcessedTweet, 
 
     boolean existsByOriginalTweetId(Long tweetId);
 
-    // NOWE OPTYMALIZACJE - pobieranie tylko ID
     @Query("SELECT pt.originalTweet.id FROM ProcessedTweet pt")
     Set<Long> findAllProcessedTweetIds();
 
-    // OPTYMALIZACJA - średnia tokenów bez pobierania wszystkich rekordów
     @Query("SELECT AVG(pt.tokenCount) FROM ProcessedTweet pt WHERE pt.tokenCount IS NOT NULL")
     Long getAverageTokenCount();
 
-    // Istniejące metody dla pustych rekordów
     @Query("SELECT pt FROM ProcessedTweet pt WHERE " +
             "(pt.normalizedContent IS NULL OR pt.normalizedContent = '') OR " +
             "(pt.tokens IS NULL OR pt.tokens = '')")
