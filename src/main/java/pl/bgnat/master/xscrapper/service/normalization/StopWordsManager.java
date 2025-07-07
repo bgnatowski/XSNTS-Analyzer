@@ -13,44 +13,20 @@ import java.util.Set;
 
 /**
  * Klasa odpowiedzialna za zarządzanie słowami stop.
+ * Ładuje słowa stop wyłącznie z pliku.
  */
 @Slf4j
 @Component
 public class StopWordsManager {
     private static final String DEFAULT_STOPWORDS_FILE = "/stopwords_pl.txt";
 
+    /**
+     * Wczytuje słowa stop z pliku.
+     * @return niezmienialny zbiór stopwords po polsku
+     */
     public Set<String> loadStopWords() {
         Set<String> stopWords = new HashSet<>();
 
-        // Załadowanie podstawowych słów stop
-        loadBasicStopWords(stopWords);
-
-        // Próba załadowania z pliku
-        loadFromFile(stopWords);
-
-        return stopWords;
-    }
-
-    private void loadBasicStopWords(Set<String> stopWords) {
-        String[] basicStopWords = {
-                // Zaimki
-                "ja", "ty", "on", "ona", "ono", "my", "wy", "oni", "one",
-                // Przyimki
-                "w", "z", "na", "do", "o", "przez", "pod", "nad", "bez", "przy", "od", "za",
-                // Spójniki
-                "i", "a", "ale", "oraz", "lub", "bo", "więc", "że",
-                // Czasowniki pomocnicze
-                "jest", "są", "był", "była", "było", "były", "będzie", "będą",
-                // Przysłówki
-                "nie", "się", "jak", "czy", "gdy", "dla", "po",
-                "user", "tak", "ten", "tym", "tego", "już", "tylko", "może", "być",
-                "kto", "też", "jego", "która", "które", "lat", "roku", "dzień"
-        };
-
-        Collections.addAll(stopWords, basicStopWords);
-    }
-
-    private void loadFromFile(Set<String> stopWords) {
         try (BufferedReader reader = new BufferedReader(
                 new InputStreamReader(
                         getClass().getResourceAsStream(DEFAULT_STOPWORDS_FILE),
@@ -61,10 +37,13 @@ public class StopWordsManager {
                         .map(String::trim)
                         .filter(line -> !line.isEmpty() && !line.startsWith("#"))
                         .forEach(stopWords::add);
+            } else {
+                log.warn("Nie znaleziono pliku słów stop: {}", DEFAULT_STOPWORDS_FILE);
             }
-        } catch (IOException | NullPointerException e) {
-            log.warn("Nie można załadować pliku słów stop: {}. Używam podstawowego zestawu",
-                    DEFAULT_STOPWORDS_FILE);
+        } catch (IOException e) {
+            log.warn("Błąd podczas ładowania pliku słów stop: {}", DEFAULT_STOPWORDS_FILE, e);
         }
+
+        return Collections.unmodifiableSet(stopWords);
     }
 }

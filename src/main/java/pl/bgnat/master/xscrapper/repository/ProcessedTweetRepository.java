@@ -49,9 +49,6 @@ public interface ProcessedTweetRepository extends JpaRepository<ProcessedTweet, 
     List<ProcessedTweet> findByOriginalTweetPostDateBetween(@Param("startDate") LocalDateTime startDate,
                                                             @Param("endDate") LocalDateTime endDate);
 
-    @Query("SELECT COUNT(pt) FROM ProcessedTweet pt WHERE pt.tokenCount > :minTokens")
-    Long countTweetsWithMinimumTokens(@Param("minTokens") Integer minTokens);
-
     @Modifying
     @Transactional
     @Query("DELETE FROM ProcessedTweet pt WHERE pt.id IN :ids")

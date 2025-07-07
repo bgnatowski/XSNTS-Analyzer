@@ -57,8 +57,14 @@ public class TopicModelingResult {
     @Column(name = "uci")
     private Double uci;
 
+    @Column(name = "umass")
+    private Double umass;
+
     @Column(name = "coherenceInterpretation")
     private String coherenceInterpretation;
+
+    @Column(name = "umassInterpretation")
+    private String umassInterpretation;
 
     @Column(name = "perplexity")
     private Double perplexity;

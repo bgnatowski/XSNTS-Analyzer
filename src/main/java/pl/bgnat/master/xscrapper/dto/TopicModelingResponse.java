@@ -27,8 +27,10 @@ public class TopicModelingResponse {
 
     private Double pmiScore;        // PMI
     private Double npmiScore;       // NPMI (-1, 1)
-    private Double uciScore;        // UMass Coherence Index
-    private String coherenceInterpretation; // Tekstowa interpretacja wyniku pmi
+    private Double uciScore;        // Uci Coherence Index
+    private Double umassScore;        // UMass Coherence Index
+    private String pmiInterpretation; // Tekstowa interpretacja wyniku pmi
+    private String umassInterpretation; // Tekstowa interpretacja wyniku umass
 
 
     @Data

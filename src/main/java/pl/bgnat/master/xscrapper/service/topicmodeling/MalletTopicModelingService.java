@@ -75,8 +75,8 @@ public class MalletTopicModelingService {
         TopicModelingResult modelResult = createModelRecord(request);
 
         try {
-            // 1. Pobierz przetworzone tweety (z ograniczeniem pamięci)
-            List<ProcessedTweet> processedTweets = getProcessedTweetsOptimized(request);
+            // 1. Pobierz przetworzone tweety
+            List<ProcessedTweet> processedTweets = getProcessedTweets();
             logMemoryUsage("Po pobraniu tweetów");
 
             // 2. Grupuj tweety ze filtrowaniem spamu
@@ -143,28 +143,9 @@ public class MalletTopicModelingService {
                 .map(Document::getText)
                 .collect(Collectors.toList());
 
-        return coherenceCalculator.calculateCoherence(topWords, documentTexts);
+        return coherenceCalculator.calculateAllMetrics(topWords, documentTexts);
     }
 
-
-    /**
-     * OPTYMALIZACJA: Pobieranie tweetów z ograniczeniem pamięci
-     */
-    private List<ProcessedTweet> getProcessedTweetsOptimized(TopicModelingRequest request) {
-        log.info("Pobieranie przetworzonych tweetów z optymalizacją pamięci");
-
-        if (request.getStartDate() != null && request.getEndDate() != null) {
-            return processedTweetRepository.findByOriginalTweetPostDateBetween(
-                    request.getStartDate(), request.getEndDate());
-        } else {
-            // OPTYMALIZACJA: Ogranicz do najnowszych 50k tweetów jeśli brak filtrów
-            return processedTweetRepository.findTop50000ByOrderByProcessedDateDesc();
-        }
-    }
-
-    /**
-     * NOWE: Pooling z filtrowaniem spamu
-     */
     private Map<String, List<ProcessedTweet>> poolTweetsWithSpamFilter(
             List<ProcessedTweet> tweets, String strategy) {
 
@@ -191,17 +172,11 @@ public class MalletTopicModelingService {
         return filteredGroups;
     }
 
-    /**
-     * NOWE: Sprawdza czy grupa zawiera spam
-     */
     private boolean isSpamGroup(String groupKey) {
         String lowerKey = groupKey.toLowerCase();
         return SPAM_KEYWORDS.stream().anyMatch(lowerKey::contains);
     }
 
-    /**
-     * OPTYMALIZACJA: Przygotowanie dokumentów z zarządzaniem pamięci
-     */
     private List<Document> prepareDocumentsOptimized(
             Map<String, List<ProcessedTweet>> groupedTweets, Integer minDocumentSize) {
 
@@ -217,9 +192,6 @@ public class MalletTopicModelingService {
         return documents;
     }
 
-    /**
-     * OPTYMALIZACJA: Tworzenie dokumentu z kontrolą pamięci
-     */
     private Document createDocumentOptimized(String documentId, List<ProcessedTweet> tweets) {
         try {
             StringBuilder textBuilder = new StringBuilder();
@@ -246,14 +218,10 @@ public class MalletTopicModelingService {
         }
     }
 
-    /**
-     * OPTYMALIZACJA: Trenowanie LDA z poprawkami wydajnościowymi
-     */
     private ParallelTopicModel trainLDAModelOptimized(List<Document> documents, TopicModelingRequest request)
             throws IOException {
         log.info("Trenuję zoptymalizowany model LDA na {} dokumentach", documents.size());
 
-        // OPTYMALIZACJA: Uproszczony pipeline
         ArrayList<Pipe> pipeList = new ArrayList<>();
         pipeList.add(new CharSequenceLowercase());
         pipeList.add(new CharSequence2TokenSequence(Pattern.compile("\\S+")));
@@ -271,12 +239,10 @@ public class MalletTopicModelingService {
 
         instances.addThruPipe(new StringArrayIterator(documentsArray));
 
-        // OPTYMALIZACJA: Mniejszy model z lepszymi parametrami
         ParallelTopicModel model = new ParallelTopicModel(request.getNumberOfTopics());
         model.addInstances(instances);
         model.setNumThreads(Math.min(numThreads, 2)); // Max 2 wątki
 
-        // OPTYMALIZACJA: Mniej iteracji dla szybszego treningu
         int iterations = Math.min(
                 request.getMaxIterations() != null ? request.getMaxIterations() : defaultIterations,
                 1000  // Max 1000 iteracji
@@ -284,7 +250,7 @@ public class MalletTopicModelingService {
         model.setNumIterations(iterations);
 
         // Parametry alpha i beta (bezpośrednie ustawienie pól)
-        double alphaSum = 5.0; // Zmniejszone z 50.0
+        double alphaSum = 5.0;  // Zmniejszone z 50.0
         double beta = 0.01;     // Zwiększone z 0.01
 
         model.alphaSum = alphaSum;
@@ -306,9 +272,6 @@ public class MalletTopicModelingService {
         return model;
     }
 
-    /**
-     * NAPRAWIONE: Wyciąganie i zapisywanie wyników z działającymi statystykami
-     */
     private void extractAndSaveResults(ParallelTopicModel model, TopicModelingResult modelResult,
                                        List<Document> documents, Map<String, List<ProcessedTweet>> groupedTweets) {
         log.info("Wyciągam i zapisuję wyniki modelu");
@@ -332,9 +295,6 @@ public class MalletTopicModelingService {
         log.info("Zapisano wyniki modelu z {} dokumentami", documents.size());
     }
 
-    /**
-     * NAPRAWIONE: Aktualizacja statystyk tematów
-     */
     private void updateTopicStatistics(TopicModelingResult modelResult) {
         log.info("Aktualizuję statystyki tematów dla modelu {}", modelResult.getId());
 
@@ -369,9 +329,6 @@ public class MalletTopicModelingService {
         log.info("Zakończono aktualizację statystyk tematów");
     }
 
-    /**
-     * NOWE: Obliczanie średniego prawdopodobieństwa w Javie (fallback)
-     */
     private Double calculateAverageTopicProbabilityJava(Integer topicId, Long modelId) {
         try {
             List<DocumentTopicAssignment> assignments = documentTopicAssignmentRepository
@@ -405,9 +362,6 @@ public class MalletTopicModelingService {
         }
     }
 
-    /**
-     * OPTYMALIZACJA: Obliczanie perplexity z obsługą błędów
-     */
     private double calculatePerplexity(ParallelTopicModel model) {
         try {
             double logLikelihood = model.modelLogLikelihood();
@@ -431,9 +385,6 @@ public class MalletTopicModelingService {
         }
     }
 
-    /**
-     * NOWE: Logowanie użycia pamięci
-     */
     private void logMemoryUsage(String phase) {
         Runtime runtime = Runtime.getRuntime();
         long totalMemory = runtime.totalMemory() / (1024 * 1024); // MB
@@ -443,10 +394,6 @@ public class MalletTopicModelingService {
         log.info("Pamięć [{}]: Użyte={}MB, Całkowite={}MB, Wolne={}MB",
                 phase, usedMemory, totalMemory, freeMemory);
     }
-
-    // ========================================
-    // POZOSTAŁE METODY BEZ ZMIAN (skrócone dla czytelności)
-    // ========================================
 
     public List<TopicModelingResponse> getAvailableModels() {
         return topicModelingResultRepository.findByStatusOrderByTrainingDateDesc(
@@ -477,8 +424,9 @@ public class MalletTopicModelingService {
         return topicModelingResultRepository.save(model);
     }
 
-    private List<ProcessedTweet> getProcessedTweets(TopicModelingRequest request) {
-        return getProcessedTweetsOptimized(request);
+    private List<ProcessedTweet> getProcessedTweets() {
+        log.info("Pobieranie wszystkich przetworzonych tweetów (bez filtrów)");
+        return processedTweetRepository.findAll();
     }
 
     private Map<String, List<ProcessedTweet>> poolTweets(List<ProcessedTweet> tweets, String strategy) {
@@ -629,7 +577,9 @@ public class MalletTopicModelingService {
         model.setPmi(coherenceMetrics.getPmi());
         model.setNpmi(coherenceMetrics.getNpmi());
         model.setUci(coherenceMetrics.getUci());
-        model.setCoherenceInterpretation(coherenceMetrics.getInterpretation());
+        model.setUmass(coherenceMetrics.getUmass());
+        model.setCoherenceInterpretation(coherenceMetrics.getPmiInterpretation());
+        model.setUmassInterpretation(coherenceMetrics.getUmassInterpretation());
         model.setPerplexity(perplexity);
         model.setStatus(status);
         model.setErrorMessage(errorMessage);
@@ -656,7 +606,9 @@ public class MalletTopicModelingService {
                 .npmiScore(model.getNpmi())
                 .pmiScore(model.getPmi())
                 .uciScore(model.getUci())
-                .coherenceInterpretation(model.getCoherenceInterpretation())
+                .umassScore(model.getUmass())
+                .pmiInterpretation(model.getCoherenceInterpretation())
+                .umassInterpretation(model.getUmassInterpretation())
                 .perplexity(model.getPerplexity())
                 .status(model.getStatus().name())
                 .topics(topics)
@@ -683,9 +635,6 @@ public class MalletTopicModelingService {
                 .build();
     }
 
-    // ========================================
-    // KLASA POMOCNICZA DOCUMENT
-    // ========================================
 
     private static class Document {
         private final String id;
