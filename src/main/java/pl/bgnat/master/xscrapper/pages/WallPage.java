@@ -114,7 +114,7 @@ public class WallPage extends BasePage {
         tweet.setPostDate(postDate);
 
         Metrics m = getMetricsForTweet(tweetElement);
-        log.info("Replies: {}, Reposts: {}, Likes: {}, Views: {}", m.getReplies(), m.getReposts(), m.getLikes(), m.getViews());
+//        log.info("Replies: {}, Reposts: {}, Likes: {}, Views: {}", m.getReplies(), m.getReposts(), m.getLikes(), m.getViews());
         tweet.setCommentCount(m.getReplies());
         tweet.setRepostCount(m.getReposts());
         tweet.setLikeCount(m.getLikes());
@@ -155,7 +155,7 @@ public class WallPage extends BasePage {
                 log.info("Kliknięto przycisk 'See new posts'.");
             }
         } catch (NoSuchElementException | TimeoutException e) {
-            log.info("Przycisk 'See new posts' nie został znaleziony.");
+//            log.info("Przycisk 'See new posts' nie został znaleziony.");
         } catch (Exception e) {
             log.error("Błąd podczas próby kliknięcia przycisku 'See new posts'.", e);
         }

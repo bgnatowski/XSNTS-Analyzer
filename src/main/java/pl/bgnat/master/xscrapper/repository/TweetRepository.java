@@ -8,6 +8,8 @@ import pl.bgnat.master.xscrapper.model.Tweet;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 
 public interface TweetRepository extends JpaRepository<Tweet, Long> {
 
@@ -31,4 +33,8 @@ public interface TweetRepository extends JpaRepository<Tweet, Long> {
     List<Long> findOldestTweetIds(Pageable pageable);
 
     boolean existsByLink(String link);
+
+    Optional<Tweet> findByLink(String link);
+
+    List<Tweet> findByLinkIn(Set<String> links);
 }

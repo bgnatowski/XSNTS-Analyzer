@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import pl.bgnat.master.xscrapper.dto.TweetDto;
 import pl.bgnat.master.xscrapper.mapper.TweetMapper;
@@ -12,36 +13,99 @@ import pl.bgnat.master.xscrapper.model.Tweet;
 import pl.bgnat.master.xscrapper.repository.TweetRepository;
 
 import java.time.LocalDateTime;
-import java.util.HashSet;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class TweetService {
+
     private final TweetRepository tweetRepository;
 
-    public void saveTweets(Set<Tweet> scrappedTweets) {
-        Set<Tweet> tweetsList = new HashSet<>();
-        int repeatCount = 0;
-        for (Tweet tweet : scrappedTweets) {
-            if (StringUtils.hasLength(tweet.getLink())) {
-                if (!tweetRepository.existsByLink(tweet.getLink())) {
-                    tweetsList.add(tweet);
-                } else {
-                    repeatCount ++;
-                    log.warn("Tweet istnieje w bazie");
-                }
+    /**
+     * Przetwarza zbiór zescrapowanych tweetów.
+     * Zapisuje nowe tweety i aktualizuje istniejące na podstawie unikalnego linku.
+     *
+     * @param scrappedTweets Zbiór tweetów do przetworzenia.
+     */
+    @Transactional
+    public void saveOrUpdateTweets(Set<Tweet> scrappedTweets) {
+        if (scrappedTweets == null || scrappedTweets.isEmpty()) {
+            log.info("Otrzymano pusty zbiór tweetów. Brak operacji do wykonania.");
+            return;
+        }
+
+        // 1. Wyodrębnij linki z zescrapowanych tweetów
+        Set<String> links = scrappedTweets.stream()
+                .map(Tweet::getLink)
+                .filter(StringUtils::hasLength)
+                .collect(Collectors.toSet());
+
+        // 2. Pobierz wszystkie istniejące tweety jednym zapytaniem
+        Map<String, Tweet> existingTweetsByLink = tweetRepository.findByLinkIn(links).stream()
+                .collect(Collectors.toMap(Tweet::getLink, Function.identity()));
+
+        List<Tweet> tweetsToSave = new ArrayList<>();
+        int newTweetsCount = 0;
+        int updatedTweetsCount = 0;
+        int skippedTweetsCount = 0;
+
+        // 3. Przetwórz każdy zescrapowany tweet
+        for (Tweet scrappedTweet : scrappedTweets) {
+            if (!StringUtils.hasLength(scrappedTweet.getLink())) {
+                skippedTweetsCount++;
+                continue;
+            }
+
+            Tweet existingTweet = existingTweetsByLink.get(scrappedTweet.getLink());
+
+            if (existingTweet != null) {
+                // Tweet istnieje -> zaktualizuj dane
+                updateTweetData(existingTweet, scrappedTweet);
+                tweetsToSave.add(existingTweet);
+                updatedTweetsCount++;
+            } else {
+                // Tweet jest nowy -> dodaj do zapisu
+                tweetsToSave.add(scrappedTweet);
+                newTweetsCount++;
             }
         }
 
-        tweetRepository.saveAll(tweetsList);
-        log.info("Zapisano: {} tweetow do bazy z {} zescrapowanych. Ilość powtórzeń: {}", tweetsList.size(), scrappedTweets.size(), repeatCount);
+        // 4. Zapisz wszystkie zmiany (nowe i zaktualizowane) w jednej transakcji
+        if (!tweetsToSave.isEmpty()) {
+            tweetRepository.saveAll(tweetsToSave);
+        }
+
+        log.info("Zakończono przetwarzanie tweetów. " +
+                        "Utworzono: {}, Zaktualizowano: {}, Pobranych: {}, Pominięto (brak linku): {}",
+                newTweetsCount, updatedTweetsCount, scrappedTweets.size(), skippedTweetsCount);
+    }
+
+    /**
+     * Prywatna metoda pomocnicza do aktualizacji pól istniejącego tweeta.
+     *
+     * @param existingTweet Encja tweeta z bazy danych.
+     * @param newData       Nowe dane ze scrappera.
+     */
+    private void updateTweetData(Tweet existingTweet, Tweet newData) {
+        existingTweet.setLikeCount(newData.getLikeCount());
+        existingTweet.setRepostCount(newData.getRepostCount());
+        existingTweet.setCommentCount(newData.getCommentCount());
+        existingTweet.setViews(newData.getViews());
+        existingTweet.setMediaLinks(newData.getMediaLinks());
+        existingTweet.setContent(newData.getContent()); // Aktualizuj treść na wypadek edycji
+        existingTweet.setUpdateDate(LocalDateTime.now());
+        existingTweet.setNeedsRefresh(false); // Oznacz jako odświeżony
     }
 
     public Tweet findTweetById(Long id) {
-        return tweetRepository.findById(id).orElseThrow(() -> new EntityNotFoundException(String.valueOf(id)));
+        return tweetRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono tweeta o ID: " + id));
     }
 
     public TweetDto saveTweet(Tweet tweet) {
@@ -69,4 +133,3 @@ public class TweetService {
         tweetRepository.saveAll(updatedTweets);
     }
 }
-

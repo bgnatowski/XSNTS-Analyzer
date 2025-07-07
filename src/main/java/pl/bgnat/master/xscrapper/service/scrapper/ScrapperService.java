@@ -21,7 +21,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static pl.bgnat.master.xscrapper.dto.UserCredential.User.USER_2;
 import static pl.bgnat.master.xscrapper.pages.WallPage.WallType.LATEST;
 import static pl.bgnat.master.xscrapper.pages.WallPage.WallType.POPULAR;
 import static pl.bgnat.master.xscrapper.utils.WaitUtils.waitRandom;
@@ -84,7 +83,7 @@ public class ScrapperService {
 
             Set<Tweet> scrappedTweets = wallPage.scrapeTweets();
 
-            tweetService.saveTweets(scrappedTweets);
+            tweetService.saveOrUpdateTweets(scrappedTweets);
             waitRandom();
         } catch (Exception e) {
             log.error("Błąd przy przetwarzaniu keyworda: {}", keyword);
@@ -167,7 +166,7 @@ public class ScrapperService {
 
         Set<Tweet> scrappedTweets = wallPage.scrapeTweets();
 
-        tweetService.saveTweets(scrappedTweets);
+        tweetService.saveOrUpdateTweets(scrappedTweets);
 
         log.info("Zamykam ForYou dla: {}", user);
         wallPage.exit();
@@ -218,7 +217,7 @@ public class ScrapperService {
                     }
 
                     Set<Tweet> scrappedTweets = wallPage.scrapeTweets();
-                    tweetService.saveTweets(scrappedTweets);
+                    tweetService.saveOrUpdateTweets(scrappedTweets);
 
                     log.info("Zakończono przetwarzanie trendu: {} dla użytkownika: {}", keyword, user);
                 } catch (Exception e) {
