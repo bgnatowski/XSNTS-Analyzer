@@ -11,6 +11,8 @@ import pl.bgnat.master.xscrapper.service.topicmodeling.MalletTopicModelingServic
 import java.time.LocalDateTime;
 import java.util.List;
 
+import static java.time.format.DateTimeFormatter.*;
+
 /**
  * Kontroler REST API dla topic modeling
  */
@@ -36,7 +38,7 @@ public class TopicModelingController {
             }
 
             if (request.getPoolingStrategy() == null) {
-                request.setPoolingStrategy("hashtag"); // Domyślnie hashtag pooling
+                request.setPoolingStrategy("hashtag");
             }
 
             TopicModelingResponse response = topicModelingService.performTopicModeling(request);
@@ -89,8 +91,7 @@ public class TopicModelingController {
                 .poolingStrategy(poolingStrategy)
                 .minDocumentSize(3)
                 .maxIterations(1000)
-                .modelName("Quick_LDA_" + LocalDateTime.now().format(
-                        java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd_HHmm")))
+                .modelName("Quick_LDA_" + LocalDateTime.now().format(ofPattern("yyyyMMdd_HHmm")))
                 .build();
 
         return trainModel(request);

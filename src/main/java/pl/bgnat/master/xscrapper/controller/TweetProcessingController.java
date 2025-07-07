@@ -24,10 +24,6 @@ public class TweetProcessingController {
 
     private final TweetProcessingService processingService;
 
-    // ========================================
-    // SEKCJA 1: GŁÓWNE PRZETWARZANIE TWEETÓW
-    // ========================================
-
     /**
      * Uruchamia przetwarzanie wszystkich tweetów z bazy danych
      * Wykonuje normalizację i tokenizację treści tweetów
@@ -69,10 +65,6 @@ public class TweetProcessingController {
             return ResponseEntity.internalServerError().body(null);
         }
     }
-
-    // ==========================================
-    // SEKCJA 2: ZARZĄDZANIE PUSTYMI REKORDAMI
-    // ==========================================
 
     /**
      * Zwraca liczbę pustych rekordów w tabeli processed_tweet
@@ -188,9 +180,6 @@ public class TweetProcessingController {
                             .build());
         }
     }
-    // =======================================
-    // SEKCJA 3: EKSPORT I ZARZĄDZANIE DANYMI
-    // =======================================
 
     /**
      * Eksportuje przetworzone tweety do pliku CSV
@@ -200,8 +189,7 @@ public class TweetProcessingController {
      * @return ResponseEntity z ścieżką do utworzonego pliku
      */
     @PostMapping("/export-csv")
-    public ResponseEntity<String> exportToCsv(
-            @RequestParam(defaultValue = "processed_tweets.csv") String filename) {
+    public ResponseEntity<String> exportToCsv(@RequestParam(defaultValue = "processed_tweets.csv") String filename) {
         log.info("Rozpoczynam eksport do pliku CSV: {}", filename);
 
         try {
