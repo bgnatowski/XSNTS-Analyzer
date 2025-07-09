@@ -2,7 +2,7 @@ package pl.bgnat.master.xscrapper.service.topicmodeling;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import pl.bgnat.master.xscrapper.model.ProcessedTweet;
+import pl.bgnat.master.xscrapper.model.normalization.ProcessedTweet;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;

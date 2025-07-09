@@ -108,6 +108,18 @@
             <artifactId>lingua</artifactId>
             <version>1.2.2</version>
         </dependency>
+
+        <dependency>
+            <groupId>org.carrot2</groupId>
+            <artifactId>morfologik-stemming</artifactId>
+            <version>2.1.9</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.opennlp</groupId>
+            <artifactId>opennlp-tools</artifactId>
+            <version>2.4.0</version>
+        </dependency>
         <!--        TESTS -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

@@ -7,10 +7,10 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
-import pl.bgnat.master.xscrapper.dto.TweetDto;
+import pl.bgnat.master.xscrapper.dto.scrapper.TweetDto;
 import pl.bgnat.master.xscrapper.mapper.TweetMapper;
-import pl.bgnat.master.xscrapper.model.Tweet;
-import pl.bgnat.master.xscrapper.repository.TweetRepository;
+import pl.bgnat.master.xscrapper.model.scrapper.Tweet;
+import pl.bgnat.master.xscrapper.repository.scrapper.TweetRepository;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;

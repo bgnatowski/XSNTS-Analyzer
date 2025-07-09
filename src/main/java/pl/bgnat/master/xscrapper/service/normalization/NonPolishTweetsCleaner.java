@@ -6,9 +6,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import pl.bgnat.master.xscrapper.dto.CleanupResult;
-import pl.bgnat.master.xscrapper.model.ProcessedTweet;
-import pl.bgnat.master.xscrapper.repository.ProcessedTweetRepository;
+import pl.bgnat.master.xscrapper.dto.normalization.CleanupResult;
+import pl.bgnat.master.xscrapper.model.normalization.ProcessedTweet;
+import pl.bgnat.master.xscrapper.repository.normalization.ProcessedTweetRepository;
 
 import java.util.ArrayList;
 import java.util.List;

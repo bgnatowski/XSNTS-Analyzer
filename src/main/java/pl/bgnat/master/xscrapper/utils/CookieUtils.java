@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.extern.slf4j.Slf4j;
 import org.openqa.selenium.Cookie;
 import org.openqa.selenium.WebDriver;
-import pl.bgnat.master.xscrapper.dto.CookieDto;
+import pl.bgnat.master.xscrapper.dto.scrapper.CookieDto;
 import pl.bgnat.master.xscrapper.mapper.CookieMapper;
 
 import java.io.IOException;

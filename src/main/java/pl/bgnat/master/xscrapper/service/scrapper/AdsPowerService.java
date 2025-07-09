@@ -11,14 +11,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import pl.bgnat.master.xscrapper.config.scrapper.AdsPowerProperties;
-import pl.bgnat.master.xscrapper.dto.AdsPowerResponse;
-import pl.bgnat.master.xscrapper.dto.BrowserStatusData;
-import pl.bgnat.master.xscrapper.dto.WebSocketInfo;
+import pl.bgnat.master.xscrapper.dto.scrapper.AdsPowerResponse;
+import pl.bgnat.master.xscrapper.dto.scrapper.BrowserStatusData;
+import pl.bgnat.master.xscrapper.dto.scrapper.WebSocketInfo;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static pl.bgnat.master.xscrapper.dto.UserCredential.User;
+import static pl.bgnat.master.xscrapper.dto.scrapper.UserCredential.User;
 
 @Service
 @RequiredArgsConstructor

@@ -7,12 +7,12 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import pl.bgnat.master.xscrapper.model.ProcessedTweet;
-import pl.bgnat.master.xscrapper.model.Tweet;
-import pl.bgnat.master.xscrapper.repository.ProcessedTweetRepository;
-import pl.bgnat.master.xscrapper.repository.TweetRepository;
-import pl.bgnat.master.xscrapper.dto.CleanupResult;
-import pl.bgnat.master.xscrapper.dto.ProcessingStats;
+import pl.bgnat.master.xscrapper.model.normalization.ProcessedTweet;
+import pl.bgnat.master.xscrapper.model.scrapper.Tweet;
+import pl.bgnat.master.xscrapper.repository.normalization.ProcessedTweetRepository;
+import pl.bgnat.master.xscrapper.repository.scrapper.TweetRepository;
+import pl.bgnat.master.xscrapper.dto.normalization.CleanupResult;
+import pl.bgnat.master.xscrapper.dto.normalization.ProcessingStats;
 
 import java.io.IOException;
 import java.util.List;

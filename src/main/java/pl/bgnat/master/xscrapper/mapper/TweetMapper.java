@@ -3,8 +3,8 @@ package pl.bgnat.master.xscrapper.mapper;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.factory.Mappers;
-import pl.bgnat.master.xscrapper.dto.TweetDto;
-import pl.bgnat.master.xscrapper.model.Tweet;
+import pl.bgnat.master.xscrapper.dto.scrapper.TweetDto;
+import pl.bgnat.master.xscrapper.model.scrapper.Tweet;
 
 @Mapper
 public interface TweetMapper {

@@ -5,7 +5,7 @@ import org.mapstruct.Mapping;
 import org.mapstruct.ObjectFactory;
 import org.mapstruct.factory.Mappers;
 import org.openqa.selenium.Cookie;
-import pl.bgnat.master.xscrapper.dto.CookieDto;
+import pl.bgnat.master.xscrapper.dto.scrapper.CookieDto;
 
 @Mapper
 public interface CookieMapper {

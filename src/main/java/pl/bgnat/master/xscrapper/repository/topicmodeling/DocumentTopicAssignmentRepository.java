@@ -1,10 +1,10 @@
-package pl.bgnat.master.xscrapper.repository;
+package pl.bgnat.master.xscrapper.repository.topicmodeling;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
-import pl.bgnat.master.xscrapper.model.DocumentTopicAssignment;
+import pl.bgnat.master.xscrapper.model.topicmodeling.DocumentTopicAssignment;
 
 import java.util.List;
 

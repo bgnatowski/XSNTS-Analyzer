@@ -1,10 +1,11 @@
-package pl.bgnat.master.xscrapper.model;
+package pl.bgnat.master.xscrapper.model.normalization;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import pl.bgnat.master.xscrapper.model.scrapper.Tweet;
 
 import java.time.LocalDateTime;
 

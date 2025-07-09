@@ -4,7 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
-import pl.bgnat.master.xscrapper.dto.Metrics;
+import pl.bgnat.master.xscrapper.dto.topicmodeling.Metrics;
 import pl.bgnat.master.xscrapper.utils.TweetParser;
 import pl.bgnat.master.xscrapper.utils.WaitUtils;
 

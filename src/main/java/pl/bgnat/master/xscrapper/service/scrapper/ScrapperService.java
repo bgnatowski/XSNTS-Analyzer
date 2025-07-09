@@ -1,15 +1,14 @@
 package pl.bgnat.master.xscrapper.service.scrapper;
 
-import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import pl.bgnat.master.xscrapper.config.scrapper.CredentialProperties;
-import pl.bgnat.master.xscrapper.dto.UserCredential;
-import pl.bgnat.master.xscrapper.dto.UserCredential.User;
-import pl.bgnat.master.xscrapper.model.Tweet;
+import pl.bgnat.master.xscrapper.dto.scrapper.UserCredential;
+import pl.bgnat.master.xscrapper.dto.scrapper.UserCredential.User;
+import pl.bgnat.master.xscrapper.model.scrapper.Tweet;
 import pl.bgnat.master.xscrapper.pages.LoginPage;
 import pl.bgnat.master.xscrapper.pages.WallPage;
 import pl.bgnat.master.xscrapper.pages.WallPage.WallType;

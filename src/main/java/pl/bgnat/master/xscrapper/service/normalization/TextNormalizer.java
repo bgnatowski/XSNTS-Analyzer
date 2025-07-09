@@ -3,7 +3,7 @@ package pl.bgnat.master.xscrapper.service.normalization;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import pl.bgnat.master.xscrapper.dto.NormalizedTweet;
+import pl.bgnat.master.xscrapper.dto.normalization.NormalizedTweet;
 
 import java.text.Normalizer;
 import java.util.ArrayList;

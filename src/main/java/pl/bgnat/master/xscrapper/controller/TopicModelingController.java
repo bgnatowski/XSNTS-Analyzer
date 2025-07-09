@@ -4,8 +4,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import pl.bgnat.master.xscrapper.dto.TopicModelingRequest;
-import pl.bgnat.master.xscrapper.dto.TopicModelingResponse;
+import pl.bgnat.master.xscrapper.dto.topicmodeling.TopicModelingRequest;
+import pl.bgnat.master.xscrapper.dto.topicmodeling.TopicModelingResponse;
 import pl.bgnat.master.xscrapper.service.topicmodeling.MalletTopicModelingService;
 
 import java.time.LocalDateTime;

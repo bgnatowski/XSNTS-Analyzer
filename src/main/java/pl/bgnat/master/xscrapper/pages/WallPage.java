@@ -2,9 +2,9 @@ package pl.bgnat.master.xscrapper.pages;
 
 import lombok.extern.slf4j.Slf4j;
 import org.openqa.selenium.*;
-import pl.bgnat.master.xscrapper.dto.Metrics;
-import pl.bgnat.master.xscrapper.dto.UserCredential;
-import pl.bgnat.master.xscrapper.model.Tweet;
+import pl.bgnat.master.xscrapper.dto.topicmodeling.Metrics;
+import pl.bgnat.master.xscrapper.dto.scrapper.UserCredential;
+import pl.bgnat.master.xscrapper.model.scrapper.Tweet;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;

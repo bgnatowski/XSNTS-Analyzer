@@ -1,16 +1,13 @@
-package pl.bgnat.master.xscrapper.repository;
+package pl.bgnat.master.xscrapper.repository.normalization;
 
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
-import pl.bgnat.master.xscrapper.model.ProcessedTweet;
+import pl.bgnat.master.xscrapper.model.normalization.ProcessedTweet;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;

@@ -4,9 +4,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import pl.bgnat.master.xscrapper.dto.CleanupResult;
-import pl.bgnat.master.xscrapper.dto.ProcessingStats;
-import pl.bgnat.master.xscrapper.model.ProcessedTweet;
+import pl.bgnat.master.xscrapper.dto.normalization.CleanupResult;
+import pl.bgnat.master.xscrapper.dto.normalization.ProcessingStats;
+import pl.bgnat.master.xscrapper.model.normalization.ProcessedTweet;
 import pl.bgnat.master.xscrapper.service.normalization.TweetProcessingService;
 
 import java.io.IOException;

@@ -1,4 +1,4 @@
-package pl.bgnat.master.xscrapper.dto;
+package pl.bgnat.master.xscrapper.dto.scrapper;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Builder;

@@ -1,4 +1,4 @@
-package pl.bgnat.master.xscrapper.model;
+package pl.bgnat.master.xscrapper.model.scrapper;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;

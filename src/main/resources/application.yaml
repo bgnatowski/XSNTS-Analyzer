@@ -67,3 +67,9 @@ adspower:
     USER_3: "zzz"
     USER_4: "aaa"
     USER_5: "bbb"
+
+app:
+  sentiment:
+    lexicon-path: classpath:sentiment/polish_lexicon.tsv
+    positive-threshold: 1.0
+    negative-threshold: -1.0

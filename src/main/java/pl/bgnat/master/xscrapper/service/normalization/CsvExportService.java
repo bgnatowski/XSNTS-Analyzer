@@ -3,9 +3,9 @@ package pl.bgnat.master.xscrapper.service.normalization;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import pl.bgnat.master.xscrapper.model.ProcessedTweet;
-import pl.bgnat.master.xscrapper.model.Tweet;
-import pl.bgnat.master.xscrapper.repository.ProcessedTweetRepository;
+import pl.bgnat.master.xscrapper.model.normalization.ProcessedTweet;
+import pl.bgnat.master.xscrapper.model.scrapper.Tweet;
+import pl.bgnat.master.xscrapper.repository.normalization.ProcessedTweetRepository;
 
 import java.io.FileWriter;
 import java.io.IOException;

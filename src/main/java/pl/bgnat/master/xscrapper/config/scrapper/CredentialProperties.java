@@ -3,8 +3,8 @@ package pl.bgnat.master.xscrapper.config.scrapper;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.ComponentScan;
-import pl.bgnat.master.xscrapper.dto.UserCredential;
-import pl.bgnat.master.xscrapper.dto.UserProxy;
+import pl.bgnat.master.xscrapper.dto.scrapper.UserCredential;
+import pl.bgnat.master.xscrapper.dto.scrapper.UserProxy;
 
 import java.util.List;
 

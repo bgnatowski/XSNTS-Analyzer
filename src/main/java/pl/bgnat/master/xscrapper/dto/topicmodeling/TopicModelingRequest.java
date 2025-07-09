@@ -1,10 +1,9 @@
-package pl.bgnat.master.xscrapper.dto;
+package pl.bgnat.master.xscrapper.dto.topicmodeling;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.checkerframework.checker.units.qual.C;
 
 import java.time.LocalDateTime;
 

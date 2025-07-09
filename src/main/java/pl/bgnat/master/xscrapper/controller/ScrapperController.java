@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import pl.bgnat.master.xscrapper.dto.UserCredential;
+import pl.bgnat.master.xscrapper.dto.scrapper.UserCredential;
 import pl.bgnat.master.xscrapper.service.scrapper.ScrapperService;
 
 import java.util.List;

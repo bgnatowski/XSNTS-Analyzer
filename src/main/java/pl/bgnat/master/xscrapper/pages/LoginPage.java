@@ -5,9 +5,9 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import pl.bgnat.master.xscrapper.config.scrapper.CredentialProperties;
-import pl.bgnat.master.xscrapper.dto.UserCredential;
+import pl.bgnat.master.xscrapper.dto.scrapper.UserCredential;
 
-import static pl.bgnat.master.xscrapper.dto.UserCredential.User;
+import static pl.bgnat.master.xscrapper.dto.scrapper.UserCredential.User;
 import static pl.bgnat.master.xscrapper.utils.CookieUtils.loadCookiesFromFile;
 import static pl.bgnat.master.xscrapper.utils.CookieUtils.saveCookiesToFile;
 import static pl.bgnat.master.xscrapper.utils.WaitUtils.waitRandom;

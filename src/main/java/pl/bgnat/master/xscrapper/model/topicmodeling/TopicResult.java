@@ -1,4 +1,4 @@
-package pl.bgnat.master.xscrapper.model;
+package pl.bgnat.master.xscrapper.model.topicmodeling;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;

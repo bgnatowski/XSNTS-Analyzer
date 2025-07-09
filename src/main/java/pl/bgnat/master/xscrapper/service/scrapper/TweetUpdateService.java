@@ -5,8 +5,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import pl.bgnat.master.xscrapper.dto.Metrics;
-import pl.bgnat.master.xscrapper.model.Tweet;
+import pl.bgnat.master.xscrapper.dto.topicmodeling.Metrics;
+import pl.bgnat.master.xscrapper.model.scrapper.Tweet;
 import pl.bgnat.master.xscrapper.pages.TweetDetailPage;
 
 import java.time.LocalDateTime;
@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.*;
 
-import static pl.bgnat.master.xscrapper.dto.UserCredential.User;
+import static pl.bgnat.master.xscrapper.dto.scrapper.UserCredential.User;
 import static pl.bgnat.master.xscrapper.utils.WaitUtils.waitRandom;
 
 @Service

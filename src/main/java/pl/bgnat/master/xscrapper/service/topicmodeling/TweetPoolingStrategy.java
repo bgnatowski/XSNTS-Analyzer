@@ -1,6 +1,6 @@
 package pl.bgnat.master.xscrapper.service.topicmodeling;
 
-import pl.bgnat.master.xscrapper.model.ProcessedTweet;
+import pl.bgnat.master.xscrapper.model.normalization.ProcessedTweet;
 
 import java.util.List;
 import java.util.Map;

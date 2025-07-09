@@ -1,14 +1,13 @@
-package pl.bgnat.master.xscrapper.repository;
+package pl.bgnat.master.xscrapper.repository.scrapper;
 
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-import pl.bgnat.master.xscrapper.model.Tweet;
+import pl.bgnat.master.xscrapper.model.scrapper.Tweet;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 
 public interface TweetRepository extends JpaRepository<Tweet, Long> {

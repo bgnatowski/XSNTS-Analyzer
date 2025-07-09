@@ -2,9 +2,9 @@ package pl.bgnat.master.xscrapper.service.normalization;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-import pl.bgnat.master.xscrapper.repository.ProcessedTweetRepository;
-import pl.bgnat.master.xscrapper.repository.TweetRepository;
-import pl.bgnat.master.xscrapper.dto.ProcessingStats;
+import pl.bgnat.master.xscrapper.repository.normalization.ProcessedTweetRepository;
+import pl.bgnat.master.xscrapper.repository.scrapper.TweetRepository;
+import pl.bgnat.master.xscrapper.dto.normalization.ProcessingStats;
 
 /**
  * Komponent odpowiedzialny za kalkulację statystyk przetwarzania
