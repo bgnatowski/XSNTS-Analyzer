@@ -45,20 +45,8 @@ public interface ProcessedTweetRepository extends JpaRepository<ProcessedTweet, 
             "(pt.tokens IS NULL OR pt.tokens = '')")
     int deleteEmptyRecords();
 
-    @Query("SELECT pt FROM ProcessedTweet pt WHERE pt.originalTweet.postDate BETWEEN :startDate AND :endDate")
-    List<ProcessedTweet> findByOriginalTweetPostDateBetween(@Param("startDate") LocalDateTime startDate,
-                                                            @Param("endDate") LocalDateTime endDate);
-
     @Modifying
     @Transactional
     @Query("DELETE FROM ProcessedTweet pt WHERE pt.id IN :ids")
     int deleteByIds(@Param("ids") List<Long> ids);
-
-    @Query("SELECT pt FROM ProcessedTweet pt ORDER BY pt.processedDate DESC")
-    List<ProcessedTweet> findTop50000ByOrderByProcessedDateDesc(Pageable pageable);
-
-    default List<ProcessedTweet> findTop50000ByOrderByProcessedDateDesc() {
-        return findTop50000ByOrderByProcessedDateDesc(PageRequest.of(0, 50000));
-    }
-
 }

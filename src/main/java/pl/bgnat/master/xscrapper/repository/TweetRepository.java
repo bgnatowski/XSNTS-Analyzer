@@ -34,7 +34,5 @@ public interface TweetRepository extends JpaRepository<Tweet, Long> {
 
     boolean existsByLink(String link);
 
-    Optional<Tweet> findByLink(String link);
-
     List<Tweet> findByLinkIn(Set<String> links);
 }

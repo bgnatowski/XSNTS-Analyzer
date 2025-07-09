@@ -36,10 +36,10 @@ public class ScrapperService {
 
     private List<String> currentTrendingKeyword = new ArrayList<>();
 
-    @Scheduled(cron = "0 0 */6 * * *")
+    @Scheduled(cron = "0 0 */4 * * *")
     public void scheduledAlternatingScrape() {
         int hour = LocalDateTime.now().getHour();
-        int index = (hour / 6) % 3;
+        int index = (hour / 4) % 3;
 
         switch (index) {
             case 0:
@@ -169,7 +169,15 @@ public class ScrapperService {
         tweetService.saveOrUpdateTweets(scrappedTweets);
 
         log.info("Zamykam ForYou dla: {}", user);
-        wallPage.exit();
+        try {
+            wallPage.exit();
+            if (userDriver != null) {
+                adsPowerService.stopDriver(user);
+            }
+        } catch (Exception e) {
+            log.error("Błąd podczas zatrzymywania przeglądarki dla użytkownika: {}: {}",
+                    user, e.getMessage());
+        }
     }
 
     private void scrapeTrendingWall(WallType wallType, List<String> list) {

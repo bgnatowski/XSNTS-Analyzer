@@ -20,7 +20,7 @@ import static pl.bgnat.master.xscrapper.utils.WaitUtils.waitRandom;
  */
 @Slf4j
 public class WallPage extends BasePage {
-    private static final int MAX_TWEETS_PER_SCRAPE = 100; // przy większych ilościach częściej następują blokady
+    private static final int MAX_TWEETS_PER_SCRAPE = 150; // przy większych ilościach częściej następują blokady
     private final UserCredential.User user;
 
     public enum WallType {
@@ -94,7 +94,7 @@ public class WallPage extends BasePage {
                 refreshPage();
                 log.warn("Wystąpił błąd przy scrapowaniu tweetów; Odświeżam stronę.");
             }
-            clickNewPostsButtonIfExists();
+//            clickNewPostsButtonIfExists();
         }
         log.info("Kończę pętlę endless scroll");
         return tweets;

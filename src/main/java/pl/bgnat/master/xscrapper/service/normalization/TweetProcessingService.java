@@ -33,9 +33,6 @@ public class TweetProcessingService {
     // KONFIGURACJA I ZALEŻNOŚCI
     // ========================================
 
-    private static final int DEFAULT_BATCH_SIZE = 500;
-    private static final int PROGRESS_LOG_INTERVAL = 1000;
-
     private final TweetRepository tweetRepository;
     private final ProcessedTweetRepository processedTweetRepository;
     private final TweetProcessor tweetProcessor;

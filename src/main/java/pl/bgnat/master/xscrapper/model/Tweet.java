@@ -10,6 +10,9 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 import java.util.Objects;
 
+/*
+ Encja zescrapowanego tweeta
+ */
 @Builder
 @Data
 @NoArgsConstructor

@@ -15,13 +15,4 @@ public interface TopicModelingResultRepository extends JpaRepository<TopicModeli
 
     List<TopicModelingResult> findByStatusOrderByTrainingDateDesc(TopicModelingResult.ModelStatus status);
 
-    Optional<TopicModelingResult> findFirstByStatusOrderByTrainingDateDesc(TopicModelingResult.ModelStatus status);
-
-    @Query("SELECT tmr FROM TopicModelingResult tmr WHERE tmr.poolingStrategy = :strategy AND tmr.status = :status")
-    List<TopicModelingResult> findByPoolingStrategyAndStatus(@Param("strategy") String strategy,
-                                                             @Param("status") TopicModelingResult.ModelStatus status);
-
-    @Query("SELECT COUNT(tmr) FROM TopicModelingResult tmr WHERE tmr.trainingDate >= :startDate")
-    Long countModelsTrainedSince(@Param("startDate") LocalDateTime startDate);
-
 }

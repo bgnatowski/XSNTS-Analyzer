@@ -8,6 +8,9 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
+/*
+Encja przechowujaca znormalizowane tweety i ich tokeny
+ */
 @Builder
 @Data
 @NoArgsConstructor
