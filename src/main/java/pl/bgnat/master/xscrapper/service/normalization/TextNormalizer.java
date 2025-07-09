@@ -31,7 +31,7 @@ public class TextNormalizer {
     // STAŁE KONFIGURACYJNE
     // ========================================
 
-    private static final String USER_PLACEHOLDER = " USER ";
+    private static final String USER_PLACEHOLDER = " ";
     private static final String NUMBER_PLACEHOLDER = " NUMBER ";
 
     // ========================================
@@ -40,7 +40,7 @@ public class TextNormalizer {
 
     private final Pattern urlPattern;
     private final Pattern mentionPattern;
-    private final Pattern hashtagPattern;
+//    private final Pattern hashtagPattern;
     private final Pattern numberPattern;
     private final Pattern punctuationPattern;
     private final Pattern whitespacePattern;
@@ -68,7 +68,7 @@ public class TextNormalizer {
         this.stopWords = stopWordsManager.loadStopWords();
         this.urlPattern = patternMatcher.createUrlPattern();
         this.mentionPattern = patternMatcher.createMentionPattern();
-        this.hashtagPattern = patternMatcher.createHashtagPattern();
+//        this.hashtagPattern = patternMatcher.createHashtagPattern();
         this.numberPattern = patternMatcher.createNumberPattern();
         this.punctuationPattern = patternMatcher.createPunctuationPattern();
         this.whitespacePattern = patternMatcher.createWhitespacePattern();
@@ -86,7 +86,6 @@ public class TextNormalizer {
      * Proces normalizacji obejmuje:
      * 1. Usuwanie URL-i
      * 2. Normalizację wzmianek (@username)
-     * 3. Przetwarzanie hashtagów
      * 4. Zamianę liczb na placeholdery
      * 5. Konwersję na małe litery
      * 6. Normalizację znaków Unicode
@@ -110,13 +109,10 @@ public class TextNormalizer {
         normalized = removeUrls(normalized);
 
         // Krok 2: Normalizacja wzmianek użytkowników
-//        normalized = normalizeMentions(normalized);
-
-        // Krok 3: Przetwarzanie hashtagów
-//        normalized = processHashtags(normalized);
+        normalized = normalizeMentions(normalized);
 
         // Krok 4: Normalizacja liczb
-//        normalized = normalizeNumbers(normalized);
+        normalized = normalizeNumbers(normalized);
 
         // Krok 5: Przetwarzanie emotikonów
         normalized = processEmoticons(normalized);
@@ -209,25 +205,13 @@ public class TextNormalizer {
     }
 
     /**
-     * Normalizuje wzmianki użytkowników (@username) zastępując je placeholderem USER.
+     * Normalizuje wzmianki użytkowników (@username) zastępując je placeholderem pustym.
      * Zachowuje informację o wzmiankach bez ujawniania konkretnych nazw użytkowników.
      */
     private String normalizeMentions(String text) {
         return mentionPattern.matcher(text).replaceAll(USER_PLACEHOLDER);
     }
 
-    /**
-     * Przetwarza hashtagi - usuwa # ale zachowuje treść hashtaga.
-     * Hashtagi często zawierają ważne słowa kluczowe dla analizy sentymentu.
-     */
-    private String processHashtags(String text) {
-        if (preserveHashtagContent) {
-            return hashtagPattern.matcher(text).replaceAll(match ->
-                    " " + match.group().substring(1) + " ");
-        } else {
-            return hashtagPattern.matcher(text).replaceAll(" ");
-        }
-    }
 
     /**
      * Zastępuje liczby placeholderem NUMBER.
