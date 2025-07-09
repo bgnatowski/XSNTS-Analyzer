@@ -1,5 +1,7 @@
 package pl.bgnat.master.xscrapper.repository.normalization;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -46,4 +48,13 @@ public interface ProcessedTweetRepository extends JpaRepository<ProcessedTweet, 
     @Transactional
     @Query("DELETE FROM ProcessedTweet pt WHERE pt.id IN :ids")
     int deleteByIds(@Param("ids") List<Long> ids);
+
+    @Query("""
+              SELECT pt FROM ProcessedTweet pt
+              WHERE NOT EXISTS (
+                SELECT 1 FROM SentimentResult sr
+                WHERE sr.processedTweet.id = pt.id)
+            """)
+    Page<ProcessedTweet> findTweetsWithoutSentiment(Pageable page);
+
 }

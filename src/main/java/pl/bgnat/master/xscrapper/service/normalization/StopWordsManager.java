@@ -18,7 +18,7 @@ import java.util.Set;
 @Slf4j
 @Component
 public class StopWordsManager {
-    private static final String DEFAULT_STOPWORDS_FILE = "/stopwords_pl.txt";
+    private static final String DEFAULT_STOPWORDS_FILE = "/normalization/stopwords_pl.txt";
 
     /**
      * Wczytuje słowa stop z pliku.
