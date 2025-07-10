@@ -62,4 +62,10 @@ public interface ProcessedTweetRepository extends JpaRepository<ProcessedTweet, 
         """)
     Page<ProcessedTweet> findAllPeaceable(Pageable pageable);
 
+    @Query("""
+  SELECT pt FROM ProcessedTweet pt
+  WHERE pt.originalTweet.id IN :tweetIds
+""")
+    List<ProcessedTweet> findAllByOriginalTweetIdIn(@Param("tweetIds") Set<Long> tweetIds);
+
 }

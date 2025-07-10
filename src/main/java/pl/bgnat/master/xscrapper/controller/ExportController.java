@@ -23,4 +23,12 @@ public class ExportController {
     public ResponseEntity<String> sentiment(@RequestParam(required = false) String path) throws Exception {
         return ResponseEntity.ok(csv.exportSentimentResults(path));
     }
+
+    /** wyniki topic sentymentu **/
+    @GetMapping("/topic-sentiment/{modelId}")
+    public ResponseEntity<String> topicSentiment(
+            @PathVariable Long modelId,
+            @RequestParam(required = false) String path) throws Exception {
+        return ResponseEntity.ok(csv.exportTopicSentimentTweets(modelId, path));
+    }
 }
