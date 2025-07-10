@@ -57,4 +57,9 @@ public interface ProcessedTweetRepository extends JpaRepository<ProcessedTweet, 
             """)
     Page<ProcessedTweet> findTweetsWithoutSentiment(Pageable page);
 
+    @Query("""
+          SELECT pt FROM ProcessedTweet pt
+        """)
+    Page<ProcessedTweet> findAllPeaceable(Pageable pageable);
+
 }

@@ -20,7 +20,7 @@ import java.time.LocalDateTime;
 @Slf4j
 public class SentimentAnalysisService {
 
-    private static final int PAGE_SIZE = 1_000;
+    private static final int PAGE_SIZE = 5_000;
 
     private final ProcessedTweetRepository processedTweetRepo;
     private final SentimentResultRepository sentimentRepo;
@@ -36,19 +36,19 @@ public class SentimentAnalysisService {
         while (true) {
             log.info("📥  Strona={}  size={}", page, PAGE_SIZE);
             Page<ProcessedTweet> tweets =
-                    processedTweetRepo.findTweetsWithoutSentiment(PageRequest.of(page, PAGE_SIZE));
+                    processedTweetRepo.findAllPeaceable(PageRequest.of(page, PAGE_SIZE));
 
             if (tweets.isEmpty()) break;
 
             long t0 = System.currentTimeMillis();
-            var results = tweets.getContent().parallelStream()      // równolegle
+            var results = tweets.getContent().parallelStream()
                     .map(this::buildResult)
                     .toList();
             sentimentRepo.saveAll(results);
             inserted += results.size();
 
-            sentimentRepo.flush();      // zapis do DB
-            em.clear();                 // czyści kontekst
+            sentimentRepo.flush();
+            em.clear();
 
             long t1 = System.currentTimeMillis();
             log.info("✅  Strona={}  records={}  time={} ms", page, results.size(), t1 - t0);
