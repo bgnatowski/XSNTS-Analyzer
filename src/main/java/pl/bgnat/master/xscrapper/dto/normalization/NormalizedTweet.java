@@ -13,5 +13,6 @@ import java.util.List;
 public class NormalizedTweet {
     private String normalizedContent;
     private List<String> tokens;
+    private List<String> tokensLemmatized;
     private Integer tokenCount;
 }

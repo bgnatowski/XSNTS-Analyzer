@@ -28,7 +28,7 @@ public class LexiconLoader {
         Arrays.stream(locations.split(","))
                 .map(String::trim)
                 .forEach(this::importSingle);
-        log.info("📚 Załadowano łącznie {} haseł (po scaleniu duplikatów)", lexicon.size());
+        log.info("Załadowano łącznie {} haseł (po scaleniu duplikatów)", lexicon.size());
     }
 
     /* ---------- prywatne ---------- */
@@ -41,7 +41,7 @@ public class LexiconLoader {
                     .filter(l -> !l.isBlank() && l.charAt(0) != '#')
                     .forEach(this::parseLine);
 
-            log.info("  • {} wczytano OK", path);
+            log.info("Wczytano: {}", path);
         } catch (Exception e) {
             throw new IllegalStateException("Błąd wczytywania: " + path, e);
         }

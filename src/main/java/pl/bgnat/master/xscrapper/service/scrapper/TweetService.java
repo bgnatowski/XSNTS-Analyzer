@@ -7,7 +7,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
-import pl.bgnat.master.xscrapper.dto.scrapper.TweetDto;
+import pl.bgnat.master.xscrapper.dto.scrapper.TweetDTO;
 import pl.bgnat.master.xscrapper.mapper.TweetMapper;
 import pl.bgnat.master.xscrapper.model.scrapper.Tweet;
 import pl.bgnat.master.xscrapper.repository.scrapper.TweetRepository;
@@ -108,7 +108,7 @@ public class TweetService {
                 .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono tweeta o ID: " + id));
     }
 
-    public TweetDto saveTweet(Tweet tweet) {
+    public TweetDTO saveTweet(Tweet tweet) {
         Tweet saved = tweetRepository.save(tweet);
         return TweetMapper.INSTANCE.toDto(saved);
     }

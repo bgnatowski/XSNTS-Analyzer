@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import pl.bgnat.master.xscrapper.repository.normalization.ProcessedTweetRepository;
 import pl.bgnat.master.xscrapper.repository.scrapper.TweetRepository;
-import pl.bgnat.master.xscrapper.dto.normalization.ProcessingStats;
+import pl.bgnat.master.xscrapper.dto.normalization.ProcessingStatsDTO;
 
 /**
  * Komponent odpowiedzialny za kalkulację statystyk przetwarzania
@@ -20,15 +20,15 @@ public class ProcessingStatsCalculator {
      * Oblicza aktualne statystyki przetwarzania
      * @return obiekt ProcessingStats
      */
-    public ProcessingStats calculateStats() {
+    public ProcessingStatsDTO calculateStats() {
         long totalTweets = tweetRepository.count();
         long normalizedTweets = processedTweetRepository.count();
         long averageTokens = calculateAverageTokens();
         double processingProgress = calculateProgress(normalizedTweets, totalTweets);
 
-        return ProcessingStats.builder()
+        return ProcessingStatsDTO.builder()
                 .totalTweets(totalTweets)
-                .normalizedTweets(normalizedTweets)
+                .processedTweets(normalizedTweets)
                 .averageTokensPerTweet(averageTokens)
                 .processingProgress(processingProgress)
                 .build();

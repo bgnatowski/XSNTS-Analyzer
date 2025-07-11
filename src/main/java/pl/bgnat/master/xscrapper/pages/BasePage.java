@@ -6,7 +6,7 @@ import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
-import pl.bgnat.master.xscrapper.utils.WaitUtils;
+import pl.bgnat.master.xscrapper.utils.scrapper.WaitUtils;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
-import static pl.bgnat.master.xscrapper.utils.WaitUtils.waitRandom;
+import static pl.bgnat.master.xscrapper.utils.scrapper.WaitUtils.waitRandom;
 
 @Slf4j
 public abstract class BasePage {

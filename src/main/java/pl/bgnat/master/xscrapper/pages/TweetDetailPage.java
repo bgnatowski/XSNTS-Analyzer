@@ -5,10 +5,10 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import pl.bgnat.master.xscrapper.dto.topicmodeling.Metrics;
-import pl.bgnat.master.xscrapper.utils.TweetParser;
-import pl.bgnat.master.xscrapper.utils.WaitUtils;
+import pl.bgnat.master.xscrapper.utils.scrapper.TweetParser;
+import pl.bgnat.master.xscrapper.utils.scrapper.WaitUtils;
 
-import static pl.bgnat.master.xscrapper.utils.WaitUtils.waitRandom;
+import static pl.bgnat.master.xscrapper.utils.scrapper.WaitUtils.waitRandom;
 
 /**
  * Klasa pagea pojedynczego tweeta (do updatewania)

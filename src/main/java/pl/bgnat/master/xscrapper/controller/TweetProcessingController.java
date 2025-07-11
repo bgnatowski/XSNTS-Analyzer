@@ -5,7 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import pl.bgnat.master.xscrapper.dto.normalization.CleanupResult;
-import pl.bgnat.master.xscrapper.dto.normalization.ProcessingStats;
+import pl.bgnat.master.xscrapper.dto.normalization.ProcessingStatsDTO;
 import pl.bgnat.master.xscrapper.model.normalization.ProcessedTweet;
 import pl.bgnat.master.xscrapper.service.normalization.TweetProcessingService;
 
@@ -35,9 +35,9 @@ public class TweetProcessingController {
         log.info("Otrzymano żądanie przetwarzania wszystkich tweetów");
 
         try {
-            processingService.processAllTweets();
             log.info("Przetwarzanie wszystkich tweetów rozpoczęte pomyślnie");
-            return ResponseEntity.ok("Przetwarzanie rozpoczęte");
+            String processedResult = processingService.processAllTweets();
+            return ResponseEntity.ok(processedResult);
 
         } catch (Exception e) {
             log.error("Błąd podczas uruchamiania przetwarzania tweetów: {}", e.getMessage(), e);
@@ -53,11 +53,11 @@ public class TweetProcessingController {
      * @return ResponseEntity z obiektiem ProcessingStats
      */
     @GetMapping("/stats")
-    public ResponseEntity<ProcessingStats> getProcessingStats() {
+    public ResponseEntity<ProcessingStatsDTO> getProcessingStats() {
         log.debug("Pobieranie statystyk przetwarzania");
 
         try {
-            ProcessingStats stats = processingService.getProcessingStats();
+            ProcessingStatsDTO stats = processingService.getProcessingStats();
             return ResponseEntity.ok(stats);
 
         } catch (Exception e) {
@@ -178,29 +178,6 @@ public class TweetProcessingController {
                             .success(false)
                             .message("Nieoczekiwany błąd: " + e.getMessage())
                             .build());
-        }
-    }
-
-    /**
-     * Eksportuje przetworzone tweety do pliku CSV
-     * Pozwala na określenie nazwy pliku wyjściowego
-     *
-     * @param filename nazwa pliku CSV (domyślnie: "processed_tweets.csv")
-     * @return ResponseEntity z ścieżką do utworzonego pliku
-     */
-    @PostMapping("/export-csv")
-    public ResponseEntity<String> exportToCsv(@RequestParam(defaultValue = "processed_tweets.csv") String filename) {
-        log.info("Rozpoczynam eksport do pliku CSV: {}", filename);
-
-        try {
-            String filePath = processingService.exportToCsv(filename);
-            log.info("Eksport zakończony pomyślnie: {}", filePath);
-            return ResponseEntity.ok("Eksport zakończony: " + filePath);
-
-        } catch (IOException e) {
-            log.error("Błąd podczas eksportu do CSV: {}", e.getMessage(), e);
-            return ResponseEntity.internalServerError()
-                    .body("Błąd podczas eksportu: " + e.getMessage());
         }
     }
 }

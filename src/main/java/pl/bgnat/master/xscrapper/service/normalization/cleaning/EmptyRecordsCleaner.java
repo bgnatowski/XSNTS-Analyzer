@@ -1,4 +1,4 @@
-package pl.bgnat.master.xscrapper.service.normalization;
+package pl.bgnat.master.xscrapper.service.normalization.cleaning;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

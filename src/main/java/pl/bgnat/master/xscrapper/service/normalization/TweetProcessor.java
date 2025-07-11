@@ -7,9 +7,11 @@ import org.springframework.stereotype.Component;
 import pl.bgnat.master.xscrapper.dto.normalization.NormalizedTweet;
 import pl.bgnat.master.xscrapper.model.normalization.ProcessedTweet;
 import pl.bgnat.master.xscrapper.model.scrapper.Tweet;
-import pl.bgnat.master.xscrapper.repository.normalization.ProcessedTweetRepository;
 
 import java.time.LocalDateTime;
+import java.util.List;
+
+import static org.springframework.util.StringUtils.*;
 
 /**
  * Komponent odpowiedzialny za przetwarzanie pojedynczych tweetów
@@ -19,41 +21,34 @@ import java.time.LocalDateTime;
 @RequiredArgsConstructor
 public class TweetProcessor {
 
+    private final LanguageDetectionService languageDetectionService;
     private final TextNormalizer textNormalizer;
     private final ObjectMapper objectMapper;
-    private final ProcessedTweetRepository processedTweetRepository;
 
     /**
-     * Przetwarza tweet i zapisuje go do bazy danych
+     * Przetwarza tweet bez zapisywania do bazy danych (zapisuje po powrocie cały batch)
      * @param tweet tweet do przetworzenia
      * @return przetworzony tweet lub null w przypadku błędu
      */
-    public ProcessedTweet processAndSave(Tweet tweet) {
-        ProcessedTweet processedTweet = processWithoutSave(tweet);
-        if (processedTweet != null) {
-            return processedTweetRepository.save(processedTweet);
+    public ProcessedTweet processTweet(Tweet tweet) {
+        if (!hasLength(tweet.getContent())) {
+//            log.warn("Tweet {} ma pustą treść", tweet.getId());
+            return null;
         }
-        return null;
-    }
 
-    /**
-     * Przetwarza tweet bez zapisywania do bazy danych
-     * @param tweet tweet do przetworzenia
-     * @return przetworzony tweet lub null w przypadku błędu
-     */
-    public ProcessedTweet processWithoutSave(Tweet tweet) {
-        if (tweet.getContent() == null || tweet.getContent().trim().isEmpty()) {
-            log.warn("Tweet {} ma pustą treść", tweet.getId());
+        if(!languageDetectionService.isPolish(tweet.getContent().trim())) {
+//            log.warn("Tweet {} nie jest po polsku", tweet.getId());
             return null;
         }
 
         try {
-            NormalizedTweet result = textNormalizer.processText(tweet.getContent());
+            NormalizedTweet result = textNormalizer.normalize(tweet.getContent());
 
             return ProcessedTweet.builder()
                     .originalTweet(tweet)
                     .normalizedContent(result.getNormalizedContent())
                     .tokens(convertTokensToJson(result.getTokens()))
+                    .tokensLemmatized(convertTokensToJson(result.getTokensLemmatized()))
                     .tokenCount(result.getTokenCount())
                     .processedDate(LocalDateTime.now())
                     .build();
@@ -64,7 +59,7 @@ public class TweetProcessor {
         }
     }
 
-    private String convertTokensToJson(java.util.List<String> tokens) {
+    private String convertTokensToJson(List<String> tokens) {
         try {
             return objectMapper.writeValueAsString(tokens);
         } catch (Exception e) {

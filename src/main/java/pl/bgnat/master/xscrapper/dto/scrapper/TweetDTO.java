@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
  */
 @Builder
 @JsonIgnoreProperties(ignoreUnknown = true)
-public record TweetDto(
+public record TweetDTO(
         Long id,
         String username,
         String content,

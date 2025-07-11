@@ -8,6 +8,8 @@ import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import static org.springframework.util.StringUtils.*;
+
 
 @Slf4j
 @Service
@@ -42,18 +44,18 @@ public class LanguageDetectionService {
     }
 
     public boolean isPolish(String text) {
-        if (text == null || text.trim().isEmpty()) {
+        if (!hasLength(text)) {
             return false;
         }
 
         try {
+            log.debug("Zaczynam detekcje jezyka dla: {}", text);
             if (text.trim().length() < 10) {
                 return detectShortText(text);
             }
 
             var detectedLanguage = detector.detectLanguageOf(text);
-
-
+            log.debug("Language detected: " + detectedLanguage);
             return detectedLanguage == Language.POLISH;
         } catch (Exception e) {
             log.warn("Błąd podczas wykrywania języka dla tekstu: {}", e.getMessage());
@@ -68,10 +70,6 @@ public class LanguageDetectionService {
             return true;
         }
 
-        if (text.matches(".*(że|się|nie|już|też|oraz|przez|czyli|więc|jak|czy|gdzie|kiedy).*")) {
-            return true;
-        }
-
-        return false;
+        return text.matches(".*(że|się|nie|już|też|oraz|przez|czyli|więc|jak|czy|gdzie|kiedy).*");
     }
 }

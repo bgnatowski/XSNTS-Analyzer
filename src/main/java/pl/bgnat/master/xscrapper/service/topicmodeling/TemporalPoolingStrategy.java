@@ -11,13 +11,17 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * Strategia grupowania tweetów według czasu (dzień)
+ * Strategia grupowania tweetów według czasu (dzień publikacji)
  */
 @Slf4j
 @Component
 public class TemporalPoolingStrategy implements TweetPoolingStrategy {
-
     private final DateTimeFormatter dayFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+    @Override
+    public String getStrategyName() {
+        return "temporal";
+    }
 
     @Override
     public Map<String, List<ProcessedTweet>> poolTweets(List<ProcessedTweet> processedTweets) {
@@ -30,10 +34,6 @@ public class TemporalPoolingStrategy implements TweetPoolingStrategy {
         return temporalGroups;
     }
 
-    @Override
-    public String getStrategyName() {
-        return "temporal";
-    }
 
     private String extractDateKey(ProcessedTweet tweet) {
         LocalDateTime postDate = tweet.getOriginalTweet().getPostDate();

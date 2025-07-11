@@ -32,7 +32,6 @@ public class TopicModelingController {
         log.info("Otrzymano żądanie trenowania modelu: {} tematów", request.getNumberOfTopics());
 
         try {
-            // Walidacja podstawowa
             if (request.getNumberOfTopics() == null || request.getNumberOfTopics() < 2) {
                 return ResponseEntity.badRequest().build();
             }

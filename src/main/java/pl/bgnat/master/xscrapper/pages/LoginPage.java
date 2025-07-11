@@ -8,9 +8,9 @@ import pl.bgnat.master.xscrapper.config.scrapper.CredentialProperties;
 import pl.bgnat.master.xscrapper.dto.scrapper.UserCredential;
 
 import static pl.bgnat.master.xscrapper.dto.scrapper.UserCredential.User;
-import static pl.bgnat.master.xscrapper.utils.CookieUtils.loadCookiesFromFile;
-import static pl.bgnat.master.xscrapper.utils.CookieUtils.saveCookiesToFile;
-import static pl.bgnat.master.xscrapper.utils.WaitUtils.waitRandom;
+import static pl.bgnat.master.xscrapper.utils.scrapper.CookieUtils.loadCookiesFromFile;
+import static pl.bgnat.master.xscrapper.utils.scrapper.CookieUtils.saveCookiesToFile;
+import static pl.bgnat.master.xscrapper.utils.scrapper.WaitUtils.waitRandom;
 
 @Slf4j
 public class LoginPage extends BasePage {

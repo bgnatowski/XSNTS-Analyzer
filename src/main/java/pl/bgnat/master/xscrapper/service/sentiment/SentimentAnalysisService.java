@@ -36,7 +36,7 @@ public class SentimentAnalysisService {
         while (true) {
             log.info("📥  Strona={}  size={}", page, PAGE_SIZE);
             Page<ProcessedTweet> tweets =
-                    processedTweetRepo.findAllPeaceable(PageRequest.of(page, PAGE_SIZE));
+                    processedTweetRepo.findAll(PageRequest.of(page, PAGE_SIZE));
 
             if (tweets.isEmpty()) break;
 

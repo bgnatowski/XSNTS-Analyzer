@@ -1,4 +1,4 @@
-package pl.bgnat.master.xscrapper.service.normalization;
+package pl.bgnat.master.xscrapper.service.normalization.cleaning;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -6,12 +6,16 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import pl.bgnat.master.xscrapper.dto.normalization.CleanupResult;
 import pl.bgnat.master.xscrapper.model.normalization.ProcessedTweet;
 import pl.bgnat.master.xscrapper.repository.normalization.ProcessedTweetRepository;
+import pl.bgnat.master.xscrapper.service.normalization.LanguageDetectionService;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import static org.springframework.util.StringUtils.*;
 
 @Slf4j
 @Service
@@ -21,7 +25,7 @@ public class NonPolishTweetsCleaner {
     private final ProcessedTweetRepository processedTweetRepository;
     private final LanguageDetectionService languageDetectionService;
 
-    private static final int BATCH_SIZE = 500;
+    private static final int BATCH_SIZE = 1000;
 
     @Transactional
     public CleanupResult cleanupNonPolishTweets() {
@@ -127,11 +131,10 @@ public class NonPolishTweetsCleaner {
     }
 
     private boolean isPolishTweet(ProcessedTweet tweet) {
-        if (tweet.getOriginalTweet() == null || tweet.getOriginalTweet().getContent() == null) {
+        if (hasLength(tweet.getNormalizedContent())) {
             return false;
         }
-
-        String content = tweet.getOriginalTweet().getContent();
+        String content = tweet.getNormalizedContent();
         return languageDetectionService.isPolish(content);
     }
 

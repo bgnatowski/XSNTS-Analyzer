@@ -8,9 +8,9 @@ import lombok.Data;
  */
 @Data
 @Builder
-public class ProcessingStats {
+public class ProcessingStatsDTO {
     private Long totalTweets;
-    private Long normalizedTweets;
+    private Long processedTweets;
     private Long averageTokensPerTweet;
-    private Double processingProgress;
+    private Double processingProgress; // % ilość total / normalizzed
 }

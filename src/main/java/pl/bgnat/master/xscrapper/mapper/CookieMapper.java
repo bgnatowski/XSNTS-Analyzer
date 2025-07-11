@@ -5,7 +5,7 @@ import org.mapstruct.Mapping;
 import org.mapstruct.ObjectFactory;
 import org.mapstruct.factory.Mappers;
 import org.openqa.selenium.Cookie;
-import pl.bgnat.master.xscrapper.dto.scrapper.CookieDto;
+import pl.bgnat.master.xscrapper.dto.scrapper.CookieDTO;
 
 @Mapper
 public interface CookieMapper {
@@ -19,10 +19,10 @@ public interface CookieMapper {
     @Mapping(target = "expiry", source = "expiry")
     @Mapping(target = "secure", source = "secure")
     @Mapping(target = "httpOnly", source = "httpOnly")
-    CookieDto seleniumCookieToDto(org.openqa.selenium.Cookie cookie);
+    CookieDTO seleniumCookieToDto(org.openqa.selenium.Cookie cookie);
 
     @ObjectFactory
-    default Cookie buildCookie(CookieDto dto) {
+    default Cookie buildCookie(CookieDTO dto) {
         Cookie.Builder builder = new Cookie.Builder(dto.name(), dto.value())
                 .domain(dto.domain())
                 .path(dto.path())

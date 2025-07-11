@@ -192,3 +192,10 @@ wy
 oni
 dzień
 user
+doorhandle
+profilehandle
+whatsapp
+click
+phone
+doorfittings
+hardwarefittings

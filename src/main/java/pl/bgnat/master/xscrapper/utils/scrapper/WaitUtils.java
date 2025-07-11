@@ -1,4 +1,4 @@
-package pl.bgnat.master.xscrapper.utils;
+package pl.bgnat.master.xscrapper.utils.scrapper;
 
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;

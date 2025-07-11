@@ -10,7 +10,7 @@ import java.util.Date;
  */
 @Builder
 @JsonIgnoreProperties(ignoreUnknown = true)
-public record CookieDto(String name,
+public record CookieDTO(String name,
                         String value,
                         String domain,
                         String path,

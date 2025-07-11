@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static pl.bgnat.master.xscrapper.pages.WallPage.WallType.LATEST;
 import static pl.bgnat.master.xscrapper.pages.WallPage.WallType.POPULAR;
-import static pl.bgnat.master.xscrapper.utils.WaitUtils.waitRandom;
+import static pl.bgnat.master.xscrapper.utils.scrapper.WaitUtils.waitRandom;
 
 @Service
 @RequiredArgsConstructor

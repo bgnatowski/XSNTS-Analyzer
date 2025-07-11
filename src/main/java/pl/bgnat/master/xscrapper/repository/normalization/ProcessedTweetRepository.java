@@ -1,7 +1,5 @@
 package pl.bgnat.master.xscrapper.repository.normalization;
 
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -11,61 +9,71 @@ import org.springframework.transaction.annotation.Transactional;
 import pl.bgnat.master.xscrapper.model.normalization.ProcessedTweet;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 
 @Repository
 public interface ProcessedTweetRepository extends JpaRepository<ProcessedTweet, Long> {
 
-    Optional<ProcessedTweet> findByOriginalTweetId(Long tweetId);
+    String QUERY_FIND_ALL_PROCESSED_TWEET_IDS =
+            """
+                SELECT pt.originalTweet.id FROM ProcessedTweet pt
+            """;
+    String QUERY_CALCULATE_AVG_TOKEN_COUNT =
+            """
+                SELECT AVG(pt.tokenCount) FROM ProcessedTweet pt
+                WHERE pt.tokenCount IS NOT NULL
+            """;
+    String QUERY_FIND_EMPTY_RECORDS =
+            """ 
+                SELECT pt FROM ProcessedTweet pt WHERE
+                (pt.normalizedContent IS NULL OR pt.normalizedContent = '') OR
+                (pt.tokens IS NULL OR pt.tokens = '')
+            """;
+    String QUERY_COUNT_EMPTY_RECORDS =
+            """
+               SELECT COUNT(pt) FROM ProcessedTweet pt WHERE
+               (pt.normalizedContent IS NULL OR pt.normalizedContent = '') OR
+               (pt.tokens IS NULL OR pt.tokens = '')
+            """;
+    String QUERY_DELETE_EMPTY_RECORDS =
+            """
+                DELETE FROM ProcessedTweet pt WHERE
+                (pt.normalizedContent IS NULL OR pt.normalizedContent = '') OR
+                (pt.tokens IS NULL OR pt.tokens = '')
+            """;
+    String QUERY_FIND_BY_ORG_TWEET_ID_IN_LIST =
+            """
+                SELECT pt FROM ProcessedTweet pt
+                WHERE pt.originalTweet.id IN :tweetIds
+            """;
+    String QUERY_DELETE_BY_IDS =
+            """
+                DELETE FROM ProcessedTweet pt WHERE pt.id IN :ids
+            """;
 
-    boolean existsByOriginalTweetId(Long tweetId);
-
-    @Query("SELECT pt.originalTweet.id FROM ProcessedTweet pt")
+    @Query(QUERY_FIND_ALL_PROCESSED_TWEET_IDS)
     Set<Long> findAllProcessedTweetIds();
 
-    @Query("SELECT AVG(pt.tokenCount) FROM ProcessedTweet pt WHERE pt.tokenCount IS NOT NULL")
+    @Query(QUERY_CALCULATE_AVG_TOKEN_COUNT)
     Long getAverageTokenCount();
 
-    @Query("SELECT pt FROM ProcessedTweet pt WHERE " +
-            "(pt.normalizedContent IS NULL OR pt.normalizedContent = '') OR " +
-            "(pt.tokens IS NULL OR pt.tokens = '')")
+    @Query(QUERY_FIND_EMPTY_RECORDS)
     List<ProcessedTweet> findEmptyRecords();
 
-    @Query("SELECT COUNT(pt) FROM ProcessedTweet pt WHERE " +
-            "(pt.normalizedContent IS NULL OR pt.normalizedContent = '') OR " +
-            "(pt.tokens IS NULL OR pt.tokens = '')")
+    @Query(QUERY_COUNT_EMPTY_RECORDS)
     long countEmptyRecords();
 
     @Modifying
     @Transactional
-    @Query("DELETE FROM ProcessedTweet pt WHERE " +
-            "(pt.normalizedContent IS NULL OR pt.normalizedContent = '') OR " +
-            "(pt.tokens IS NULL OR pt.tokens = '')")
+    @Query(QUERY_DELETE_EMPTY_RECORDS)
     int deleteEmptyRecords();
 
     @Modifying
     @Transactional
-    @Query("DELETE FROM ProcessedTweet pt WHERE pt.id IN :ids")
+    @Query(QUERY_DELETE_BY_IDS)
     int deleteByIds(@Param("ids") List<Long> ids);
 
-    @Query("""
-              SELECT pt FROM ProcessedTweet pt
-              WHERE NOT EXISTS (
-                SELECT 1 FROM SentimentResult sr
-                WHERE sr.processedTweet.id = pt.id)
-            """)
-    Page<ProcessedTweet> findTweetsWithoutSentiment(Pageable page);
-
-    @Query("""
-          SELECT pt FROM ProcessedTweet pt
-        """)
-    Page<ProcessedTweet> findAllPeaceable(Pageable pageable);
-
-    @Query("""
-  SELECT pt FROM ProcessedTweet pt
-  WHERE pt.originalTweet.id IN :tweetIds
-""")
+    @Query(QUERY_FIND_BY_ORG_TWEET_ID_IN_LIST)
     List<ProcessedTweet> findAllByOriginalTweetIdIn(@Param("tweetIds") Set<Long> tweetIds);
 
 }

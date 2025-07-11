@@ -9,9 +9,9 @@ import pl.bgnat.master.xscrapper.model.scrapper.Tweet;
 
 import java.time.LocalDateTime;
 
-/*
-Encja przechowujaca znormalizowane tweety i ich tokeny
- */
+/**
+    Encja przechowująca znormalizowane tweety i ich tokeny
+*/
 @Builder
 @Data
 @NoArgsConstructor
@@ -38,6 +38,9 @@ public class ProcessedTweet {
 
     @Column(name = "tokens", columnDefinition = "TEXT")
     private String tokens;
+
+    @Column(name = "tokens_lemmatized", columnDefinition = "TEXT")
+    private String tokensLemmatized;
 
     @Column(name = "processed_date")
     private LocalDateTime processedDate;

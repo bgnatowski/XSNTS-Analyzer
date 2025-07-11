@@ -12,8 +12,8 @@ import java.util.List;
 import java.util.Set;
 
 import static org.springframework.util.StringUtils.hasLength;
-import static pl.bgnat.master.xscrapper.utils.TweetParser.*;
-import static pl.bgnat.master.xscrapper.utils.WaitUtils.waitRandom;
+import static pl.bgnat.master.xscrapper.utils.scrapper.TweetParser.*;
+import static pl.bgnat.master.xscrapper.utils.scrapper.WaitUtils.waitRandom;
 
 /**
  * Główna klasa widoku wall (popular, latest, fy) z ktorej scrapowane są tweety.

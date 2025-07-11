@@ -4,7 +4,7 @@ import opennlp.tools.tokenize.SimpleTokenizer;
 import org.springframework.stereotype.Component;
 import pl.bgnat.master.xscrapper.config.sentiment.SentimentProperties;
 import pl.bgnat.master.xscrapper.model.sentiment.SentimentLabel;
-import pl.bgnat.master.xscrapper.utils.PolishStemmerUtil;
+import pl.bgnat.master.xscrapper.utils.normalization.PolishStemmerUtil;
 
 import java.util.Map;
 import java.util.Set;

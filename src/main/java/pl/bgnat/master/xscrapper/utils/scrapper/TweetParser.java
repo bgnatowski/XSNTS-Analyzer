@@ -1,4 +1,4 @@
-package pl.bgnat.master.xscrapper.utils;
+package pl.bgnat.master.xscrapper.utils.scrapper;
 
 import lombok.extern.slf4j.Slf4j;
 import org.openqa.selenium.By;

@@ -12,11 +12,12 @@ import pl.bgnat.master.xscrapper.model.scrapper.Tweet;
 import pl.bgnat.master.xscrapper.repository.normalization.ProcessedTweetRepository;
 import pl.bgnat.master.xscrapper.repository.scrapper.TweetRepository;
 import pl.bgnat.master.xscrapper.dto.normalization.CleanupResult;
-import pl.bgnat.master.xscrapper.dto.normalization.ProcessingStats;
-import pl.bgnat.master.xscrapper.service.export.CsvExportService;
+import pl.bgnat.master.xscrapper.dto.normalization.ProcessingStatsDTO;
+import pl.bgnat.master.xscrapper.service.normalization.cleaning.EmptyRecordsCleaner;
+import pl.bgnat.master.xscrapper.service.normalization.cleaning.NonPolishTweetsCleaner;
 
-import java.io.IOException;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -30,15 +31,12 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class TweetProcessingService {
 
-    // ========================================
-    // KONFIGURACJA I ZALEŻNOŚCI
-    // ========================================
-
     private final TweetRepository tweetRepository;
     private final ProcessedTweetRepository processedTweetRepository;
+
     private final TweetProcessor tweetProcessor;
-    private final CsvExportService csvExportService;
     private final ProcessingStatsCalculator statsCalculator;
+
     private final EmptyRecordsCleaner emptyRecordsCleaner;
     private final NonPolishTweetsCleaner nonPolishTweetsCleaner;
 
@@ -48,105 +46,44 @@ public class TweetProcessingService {
     @Value("${app.processing.progress-interval:1000}")
     private int progressInterval;
 
-    // ========================================
-    // GŁÓWNE METODY PRZETWARZANIA
-    // ========================================
-
-    /**
-     * Przetwarza pojedynczy tweet
-     *
-     * @param tweet tweet do przetworzenia
-     * @return przetworzony tweet lub null w przypadku błędu
-     */
     @Transactional
-    public ProcessedTweet processTweet(Tweet tweet) {
-        validateTweet(tweet);
-
-        if (isAlreadyProcessed(tweet.getId())) {
-            log.debug("Tweet {} już został przetworzony", tweet.getId());
-            return findProcessedTweet(tweet.getId());
-        }
-
-        return tweetProcessor.processAndSave(tweet);
-    }
-
-    /**
-     * ZOPTYMALIZOWANA metoda przetwarzania wszystkich tweetów
-     * Używa batch processing dla zwiększenia wydajności
-     */
-    @Transactional
-    public void processAllTweets() {
+    public String processAllTweets() {
         log.info("Rozpoczynam zoptymalizowane przetwarzanie wszystkich tweetów");
 
         long startTime = System.currentTimeMillis();
         AtomicInteger totalProcessed = new AtomicInteger(0);
 
-        // Pobierz tylko ID tweetów które nie zostały jeszcze przetworzone
+        // Pobierz tylko ID tweetów, które nie zostały jeszcze przetworzone
         Set<Long> processedTweetIds = getProcessedTweetIds();
         long totalTweets = getTotalTweetCount();
 
-        log.info("Znaleziono {} tweetów do przetworzenia (z {} całkowitych)",
-                totalTweets - processedTweetIds.size(), totalTweets);
+        log.info("Znaleziono {} tweetów do przetworzenia (z {} całkowitych)", totalTweets - processedTweetIds.size(), totalTweets);
 
-        processUnprocessedTweetsBatch(processedTweetIds, totalProcessed);
+        processUnprocessedTweetsInBatches(processedTweetIds, totalProcessed, totalTweets);
 
         long endTime = System.currentTimeMillis();
-        log.info("Zakończono przetwarzanie. Przetworzono {} nowych tweetów w {} ms",
-                totalProcessed.get(), endTime - startTime);
+        String processedResult = "Zakończono przetwarzanie. Przetworzono %s nowych tweetów w %d ms".formatted(totalTweets, endTime - startTime);
+        log.info(processedResult);
+        return processedResult;
     }
-
-    // ========================================
-    // STATYSTYKI I EKSPORT
-    // ========================================
 
     /**
      * Pobiera statystyki przetwarzania
      *
      * @return obiekt ProcessingStats z aktualnymi statystykami
      */
-    public ProcessingStats getProcessingStats() {
+    public ProcessingStatsDTO getProcessingStats() {
         return statsCalculator.calculateStats();
     }
 
-    /**
-     * Eksportuje przetworzone tweety do pliku CSV
-     *
-     * @param filename nazwa pliku wyjściowego
-     * @return ścieżka do utworzonego pliku
-     * @throws IOException w przypadku błędu zapisu
-     */
-    public String exportToCsv(String filename) throws IOException {
-        validateFilename(filename);
-        return csvExportService.exportProcessedTweets(filename);
-    }
-
-    // ========================================
-    // ZARZĄDZANIE PUSTYMI REKORDAMI
-    // ========================================
-
-    /**
-     * Usuwa rekordy z pustymi polami
-     *
-     * @return wynik operacji czyszczenia
-     */
     public CleanupResult cleanupEmptyRecords() {
         return emptyRecordsCleaner.cleanupEmptyRecords();
     }
 
-    /**
-     * Zwraca listę pustych rekordów
-     *
-     * @return lista pustych rekordów
-     */
     public List<ProcessedTweet> getEmptyRecords() {
         return emptyRecordsCleaner.getEmptyRecords();
     }
 
-    /**
-     * Zwraca liczbę pustych rekordów
-     *
-     * @return liczba pustych rekordów
-     */
     public long getEmptyRecordsCount() {
         return emptyRecordsCleaner.getEmptyRecordsCount();
     }
@@ -159,14 +96,11 @@ public class TweetProcessingService {
         return nonPolishTweetsCleaner.countNonPolishTweets();
     }
 
-    // ========================================
-    // METODY POMOCNICZE
-    // ========================================
-
-    private void processUnprocessedTweetsBatch(Set<Long> processedTweetIds, AtomicInteger totalProcessed) {
+    private void processUnprocessedTweetsInBatches(Set<Long> processedTweetIds, AtomicInteger totalProcessed, long totalTweets) {
         int pageNumber = 0;
         Page<Tweet> page;
 
+        log.info("Zaczynam przetwarzanie w batchach");
         do {
             page = tweetRepository.findAll(PageRequest.of(pageNumber, batchSize));
 
@@ -175,10 +109,11 @@ public class TweetProcessingService {
                     .collect(Collectors.toList());
 
             if (!unprocessedTweets.isEmpty()) {
+                log.info("Rozpoczynam batch: {}. Przetworzono {}/{}", pageNumber, totalProcessed.get(), totalTweets);
                 int batchProcessed = processTweetsBatch(unprocessedTweets);
                 totalProcessed.addAndGet(batchProcessed);
 
-                logProgressIfNeeded(totalProcessed.get());
+                logProcessingProgress(totalProcessed.get());
             }
 
             pageNumber++;
@@ -188,8 +123,8 @@ public class TweetProcessingService {
 
     private int processTweetsBatch(List<Tweet> tweets) {
         List<ProcessedTweet> processedTweets = tweets.stream()
-                .map(tweetProcessor::processWithoutSave)
-                .filter(processedTweet -> processedTweet != null)
+                .map(tweetProcessor::processTweet)
+                .filter(Objects::nonNull)
                 .collect(Collectors.toList());
 
         if (!processedTweets.isEmpty()) {
@@ -207,26 +142,9 @@ public class TweetProcessingService {
         return tweetRepository.count();
     }
 
-    private void logProgressIfNeeded(int processed) {
+    private void logProcessingProgress(int processed) {
         if (processed % progressInterval == 0) {
             log.info("Przetworzono {} tweetów", processed);
-        }
-    }
-
-    private boolean isAlreadyProcessed(Long tweetId) {
-        return processedTweetRepository.existsByOriginalTweetId(tweetId);
-    }
-
-    private ProcessedTweet findProcessedTweet(Long tweetId) {
-        return processedTweetRepository.findByOriginalTweetId(tweetId).orElse(null);
-    }
-
-    private void validateTweet(Tweet tweet) {
-        if (tweet == null) {
-            throw new IllegalArgumentException("Tweet nie może być null");
-        }
-        if (tweet.getId() == null) {
-            throw new IllegalArgumentException("Tweet ID nie może być null");
         }
     }
 
