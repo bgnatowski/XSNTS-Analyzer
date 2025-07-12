@@ -6,10 +6,8 @@ zł
 www
 pl
 ul
-a
 si
 ci
-on
 tel
 hab
 prof
@@ -124,7 +122,6 @@ on
 one
 oraz
 pan
-po
 pod
 ponad
 ponieważ
@@ -157,6 +154,7 @@ teraz
 też
 to
 trzeba
+a
 tu
 tych
 tylko

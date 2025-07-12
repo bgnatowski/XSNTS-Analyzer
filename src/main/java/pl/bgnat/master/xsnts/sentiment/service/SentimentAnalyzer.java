@@ -4,7 +4,7 @@ import org.springframework.stereotype.Component;
 import pl.bgnat.master.xsnts.normalization.service.processing.TextTokenizer;
 import pl.bgnat.master.xsnts.sentiment.config.SentimentProperties;
 import pl.bgnat.master.xsnts.sentiment.model.SentimentLabel;
-import pl.bgnat.master.xsnts.normalization.utils.PolishStemmerUtil;
+import pl.bgnat.master.xsnts.normalization.utils.TextStemmerPL;
 
 import java.util.List;
 import java.util.Map;
@@ -66,7 +66,7 @@ public class SentimentAnalyzer {
             }
 
             /* 3. lematyzacja + słownik */
-            String lemma = lemmaCache.computeIfAbsent(lower, PolishStemmerUtil::lemmatize);
+            String lemma = lemmaCache.computeIfAbsent(lower, TextStemmerPL::lemmatize);
             double val = lex.polarity(lemma);
             if (val == 0.0) continue;           // brak w słowniku → pomijamy
 

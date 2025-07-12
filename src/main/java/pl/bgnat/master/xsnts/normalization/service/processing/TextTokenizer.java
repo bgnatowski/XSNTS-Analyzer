@@ -1,10 +1,8 @@
 package pl.bgnat.master.xsnts.normalization.service.processing;
 
-import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import pl.bgnat.master.xsnts.normalization.utils.PolishStemmerUtil;
+import pl.bgnat.master.xsnts.normalization.utils.TextStemmerPL;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -57,7 +55,7 @@ public class TextTokenizer {
     }
 
     public List<String> lemmatizeTokens(List<String> tokens) {
-        return tokens.stream().map(PolishStemmerUtil::lemmatize).toList();
+        return tokens.stream().map(TextStemmerPL::lemmatize).toList();
     }
 
     private boolean isValidToken(String token) {

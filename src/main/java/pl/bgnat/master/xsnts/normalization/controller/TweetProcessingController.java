@@ -139,44 +139,4 @@ public class TweetProcessingController {
         }
     }
 
-    @GetMapping("/non-polish-count")
-    public ResponseEntity<Long> getNonPolishTweetsCount() {
-        log.info("Otrzymano żądanie liczenia tweetów niepolskich");
-
-        try {
-            long count = processingService.countNonPolishTweets();
-            log.info("Znaleziono {} tweetów niepolskich", count);
-            return ResponseEntity.ok(count);
-
-        } catch (Exception e) {
-            log.error("Błąd podczas liczenia tweetów niepolskich: {}", e.getMessage(), e);
-            return ResponseEntity.internalServerError().body(0L);
-        }
-    }
-
-    @DeleteMapping("/cleanup-non-polish")
-    public ResponseEntity<CleanupResult> cleanupNonPolishTweets() {
-        log.info("Otrzymano żądanie usunięcia tweetów niepolskich");
-
-        try {
-            CleanupResult result = processingService.cleanupNonPolishTweets();
-
-            if (result.getSuccess()) {
-                log.info("Pomyślnie usunięto {} tweetów niepolskich", result.getDeletedRecords());
-                return ResponseEntity.ok(result);
-            } else {
-                log.warn("Nie udało się usunąć tweetów niepolskich: {}", result.getMessage());
-                return ResponseEntity.internalServerError().body(result);
-            }
-
-        } catch (Exception e) {
-            log.error("Nieoczekiwany błąd podczas usuwania tweetów niepolskich: {}", e.getMessage(), e);
-            return ResponseEntity.internalServerError()
-                    .body(CleanupResult.builder()
-                            .deletedRecords(0)
-                            .success(false)
-                            .message("Nieoczekiwany błąd: " + e.getMessage())
-                            .build());
-        }
-    }
 }

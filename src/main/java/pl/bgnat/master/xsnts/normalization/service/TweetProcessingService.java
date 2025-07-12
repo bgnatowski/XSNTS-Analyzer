@@ -8,6 +8,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pl.bgnat.master.xsnts.normalization.model.ProcessedTweet;
+import pl.bgnat.master.xsnts.normalization.service.cleaning.EmptyRecordsCleaner;
 import pl.bgnat.master.xsnts.scrapper.model.Tweet;
 import pl.bgnat.master.xsnts.normalization.repository.ProcessedTweetRepository;
 import pl.bgnat.master.xsnts.scrapper.repository.TweetRepository;
@@ -15,9 +16,6 @@ import pl.bgnat.master.xsnts.normalization.dto.CleanupResult;
 import pl.bgnat.master.xsnts.normalization.dto.ProcessingStatsDTO;
 import pl.bgnat.master.xsnts.normalization.service.processing.ProcessingStatsCalculator;
 import pl.bgnat.master.xsnts.normalization.service.processing.PolishTweetProcessor;
-import pl.bgnat.master.xsnts.normalization.service.cleaning.EmptyRecordsCleaner;
-import pl.bgnat.master.xsnts.normalization.service.cleaning.NonPolishTweetsCleaner;
-
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -44,7 +42,6 @@ public class TweetProcessingService {
     private final ProcessingStatsCalculator statsCalculator;
 
     private final EmptyRecordsCleaner emptyRecordsCleaner;
-    private final NonPolishTweetsCleaner nonPolishTweetsCleaner;
 
     @Value("${app.processing.batch-size:500}")
     private int batchSize;
@@ -94,13 +91,6 @@ public class TweetProcessingService {
         return emptyRecordsCleaner.getEmptyRecordsCount();
     }
 
-    public CleanupResult cleanupNonPolishTweets() {
-        return nonPolishTweetsCleaner.cleanupNonPolishTweets();
-    }
-
-    public long countNonPolishTweets() {
-        return nonPolishTweetsCleaner.countNonPolishTweets();
-    }
 
     private void processUnprocessedTweetsInBatches(Set<Long> processedTweetIds, AtomicInteger totalProcessed, long totalTweets) {
         int pageNumber = 0;
@@ -152,12 +142,6 @@ public class TweetProcessingService {
     private void logProcessingProgress(int processed) {
         if (processed % progressInterval == 0) {
             log.info("Przetworzono {} tweetów", processed);
-        }
-    }
-
-    private void validateFilename(String filename) {
-        if (filename == null || filename.trim().isEmpty()) {
-            throw new IllegalArgumentException("Nazwa pliku nie może być pusta");
         }
     }
 }

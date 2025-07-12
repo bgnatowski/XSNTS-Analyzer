@@ -437,19 +437,20 @@ public class MalletTopicModelingService {
         try {
             List<String> tokens = objectMapper.readValue(tweetTokens, new TypeReference<List<String>>() {});
 
-            // opcjonalne pominięcie wzmianki „@anonymized”
-            if (skipMentions) {
-                tokens = tokens.stream()
-                        .filter(t -> !t.equals("@anonymized"))
-                        .toList();
-            }
-            return String.join(" ", tokens);
+            String text = tokens.stream()
+                    // wyrzuć „@anonymized”, jeśli trzeba
+                    .filter(t -> !skipMentions || !t.equals("@anonymized"))
+                    .filter(t -> t.length() > 1)
+                    .collect(Collectors.joining(" "));
+
+            return text;
 
         } catch (Exception e) {
             log.warn("Błąd podczas parsowania tokenów dla tweeta {}: {}", tweetId, e.getMessage());
             return "";
         }
     }
+
 
 
     private String saveModel(ParallelTopicModel model, String modelName) {
