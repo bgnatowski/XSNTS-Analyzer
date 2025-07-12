@@ -10,10 +10,10 @@
     </parent>
 
     <groupId>pl.bgnat.master</groupId>
-    <artifactId>x-scrapper</artifactId>
+    <artifactId>XSNTS-Analyzer</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>x-scrapper</name>
-    <description>x-scrapper</description>
+    <name>XSNTS</name>
+    <description>XSNTS</description>
     <properties>
         <java.version>17</java.version>
         <mapstruct.version>1.5.5.Final</mapstruct.version>
@@ -24,6 +24,8 @@
         <kafka.version>3.9.0</kafka.version>
         <mallet.version>2.0.8</mallet.version>
         <commons-math3.version>3.6.1</commons-math3.version>
+        <lingua.version>1.2.2</lingua.version>
+        <morfologik.version>2.1.9</morfologik.version>
     </properties>
 
     <dependencies>
@@ -106,24 +108,18 @@
         <dependency>
             <groupId>com.github.pemistahl</groupId>
             <artifactId>lingua</artifactId>
-            <version>1.2.2</version>
+            <version>${lingua.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.carrot2</groupId>
             <artifactId>morfologik-stemming</artifactId>
-            <version>2.1.9</version>
+            <version>${morfologik.version}</version>
         </dependency>
         <dependency>
             <groupId>org.carrot2</groupId>
             <artifactId>morfologik-polish</artifactId>
-            <version>2.1.9</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.opennlp</groupId>
-            <artifactId>opennlp-tools</artifactId>
-            <version>2.4.0</version>
+            <version>${morfologik.version}</version>
         </dependency>
         <!--        TESTS -->
         <dependency>
