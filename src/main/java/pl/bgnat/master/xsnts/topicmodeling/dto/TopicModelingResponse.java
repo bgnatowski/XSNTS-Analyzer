@@ -17,6 +17,9 @@ public class TopicModelingResponse {
     private Long modelId;
     private String modelName;
     private Integer numberOfTopics;
+    private boolean skipMentions;
+    private boolean isUseBigrams;
+    private String tokenStrategy;
     private String poolingStrategy;
     private Integer documentsCount;
     private Integer originalTweetsCount;

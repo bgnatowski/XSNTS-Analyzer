@@ -18,6 +18,12 @@ public class ExportController {
         return ResponseEntity.ok(csv.exportProcessedTweets(path));
     }
 
+    /** wyniki analizy tematów */
+    @GetMapping("/topic-results/{modelId}")
+    public ResponseEntity<String> processed(@PathVariable Long modelId, @RequestParam(required = false) String path) throws Exception {
+        return ResponseEntity.ok(csv.exportTopicResults(modelId, path));
+    }
+
     /** wyniki sentymentu */
     @GetMapping("/sentiment")
     public ResponseEntity<String> sentiment(@RequestParam(required = false) String path) throws Exception {

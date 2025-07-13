@@ -17,6 +17,7 @@ import java.time.LocalDateTime;
 public class TopicModelingRequest {
     private String tokenStrategy;       // "normal" / "lemmatized"
     private String topicModel;          // np. LDA (na razie tylko tyle)
+    private boolean isUseBigrams;       // czy uzywac bigramow
     private Integer numberOfTopics;     // Ustawienie ilosci topicow
     private String poolingStrategy;     // "hashtag", "temporal", tbd. "author"
     private Integer minDocumentSize;    // Minimalna liczba tweetów w dokumencie

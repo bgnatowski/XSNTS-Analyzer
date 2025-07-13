@@ -32,6 +32,12 @@ public class TopicModelingResult {
     @Column(name = "token_strategy")
     private String tokenStrategy;       // "normal" / "lemmatized"
 
+    @Column(name = "is_use_bigrams")
+    private boolean isUseBigrams;
+
+    @Column(name = "skip_mentions")
+    private boolean skipMentions;
+
     @Column(name = "topic_model") // LDA
     private String topicModel;
 

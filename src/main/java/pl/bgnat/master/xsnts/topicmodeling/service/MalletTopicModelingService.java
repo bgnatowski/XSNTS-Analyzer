@@ -8,6 +8,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.math3.stat.descriptive.rank.Median;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -50,32 +51,35 @@ import static pl.bgnat.master.xsnts.topicmodeling.model.TopicModelingResult.Mode
 public class MalletTopicModelingService {
 
     public static final int MIN_DOCUMENT_SIZE = 10;
-    public static final int MIN_DOCUMENT_TEXT_LENGHT = 20;
-    public static final int MAX_MODEL_ITERATIONS = 1000;
+    public static final int MAX_MODEL_ITER    = 1000;
+    private static final List<Integer> K_GRID = List.of(6, 8, 10, 12, 14);
+    private static final Set<String> TWO_LETTER_WHITELIST = Set.of("po", "na", "od", "do");
 
+    /* ─────────────────────────  repozytoria  ───────────────────────── */
     private final ProcessedTweetRepository processedTweetRepository;
     private final TopicModelingResultRepository topicModelingResultRepository;
     private final TopicResultRepository topicResultRepository;
     private final DocumentTopicAssignmentRepository documentTopicAssignmentRepository;
-    private final ObjectMapper objectMapper;
 
+    /* ─────────────────────────  usługi  ───────────────────────── */
     private final HashtagPoolingStrategy hashtagPoolingStrategy;
     private final TemporalPoolingStrategy temporalPoolingStrategy;
 
     private final TopicCoherenceCalculator coherenceCalculator;
+    private final ObjectMapper objectMapper;
 
+    /* ─────────────────────────  konfig  ───────────────────────── */
     @Value("${app.topic-modeling.models-directory:./output/topic_models}")
     private String modelsDirectory;
-
     @Value("${app.topic-modeling.default-iterations:1000}")
     private int defaultIterations;
-
     @Value("${app.topic-modeling.num-threads:2}")
     private int numThreads;
+    @Value("${app.topic-modeling.responses-directory:./output/topic_responses}")
+    private String responsesDir;
 
     @Value("${app.topic-modeling.alpha-sum:5.0}")
     private double alphaSum;
-
     @Value("${app.topic-modeling.beta:0.01}")
     private double beta;
 
@@ -83,10 +87,9 @@ public class MalletTopicModelingService {
      * Główna metoda uruchamiająca proces topic modeling
      */
     public TopicModelingResponse performTopicModeling(TopicModelingRequest request) {
-        log.info("Rozpoczynam topic modeling: {} tematów, strategia: {}", request.getNumberOfTopics(), request.getPoolingStrategy());
+        log.info("Rozpoczynam topic modeling strategia: {}", request.getPoolingStrategy());
 
         logMemoryUsage("Start");
-
         TopicModelingResult modelResult = createModelRecordToBeTrained(request);
 
         try {
@@ -98,48 +101,158 @@ public class MalletTopicModelingService {
             Map<String, List<ProcessedTweet>> groupedTweets = poolTweetsWithStrategy(processedTweets, request.getPoolingStrategy());
             logMemoryUsage("Po grupowaniu");
 
-            // 3. Przygotuj dokumenty (zoptymalizowane)
-            List<Document> documents = prepareDocumentsFromTweets(groupedTweets, request);
+            // 3. Dynamiczny próg długości tekstu
+            int medianGroup = (int) new Median().evaluate(groupedTweets.values().stream().mapToDouble(List::size).toArray());
+            int dynMinTextLen = Math.max(10, medianGroup / 2);
+
+            // 4. Przygotuj dokumenty (zoptymalizowane)
+            List<Document> documents = prepareDocumentsFromTweets(groupedTweets, request, dynMinTextLen);
             logMemoryUsage("Po przygotowaniu dokumentów");
 
             // Zwolnij pamięć po przygotowaniu dokumentów (bardzo duze obiekty)
             processedTweets.clear();
             groupedTweets.clear();
 
-            // 4. Uruchom MALLET LDA
-            ParallelTopicModel model;
-            switch (request.getTopicModel().toUpperCase()){
-                case "LDA":
-                    model = trainLDAModel(documents, request);
-                    break;
-                default:
-                    model = trainLDAModel(documents, request);
-                    break;
-            }
-            logMemoryUsage("Po treningu modelu");
+            // 5. Grid-search liczby tematów
+            int bestK = selectBestK(documents);
+            request.setNumberOfTopics(bestK);
 
-            // 5. Zapisz model do pliku
-            String modelPath = saveModel(model, modelResult.getModelName());
+            // 6. Uruchom MALLET LDA
+            ParallelTopicModel lda = trainLDAModel(documents, request);
 
-            // 6. Wyciągnij wyniki i zapisz do bazy
-            extractAndSaveResults(model, modelResult, documents);
-
-            // 7. Oblicz metryki
-            CoherenceMetrics metrics = calculateAdvancedCoherence(model, documents);
+            // 7. Zapisy i metryki
+            String modelPath = saveModel(lda, modelResult.getModelName());
+            extractAndSaveResults(lda, modelResult, documents);
+            CoherenceMetrics metrics = calculateAdvancedCoherence(lda, documents);
 
             // 8. Aktualizuj rekord w bazie
             updateModelRecord(modelResult, modelPath, metrics, COMPLETED, null);
 
+
             log.info("Topic modeling zakończony pomyślnie. Model ID: {}", modelResult.getId());
             logMemoryUsage("Koniec");
 
-            return buildResponse(modelResult);
-
+            TopicModelingResponse response = buildResponse(modelResult);
+            persistResponse(response);
+            return response;
         } catch (Exception e) {
             log.error("Błąd podczas topic modeling: {}", e.getMessage(), e);
             updateModelRecord(modelResult, null, CoherenceMetrics.empty(),  FAILED, e.getMessage());
             throw new RuntimeException("Topic modeling failed", e);
         }
+    }
+
+    /* ─────────────────────────  grid-search  ───────────────────────── */
+    private int selectBestK(List<Document> docs) throws IOException {
+        double bestNpmi = Double.NEGATIVE_INFINITY;
+        int    bestK    = K_GRID.get(0);
+
+        for (int k : K_GRID) {
+            TopicModelingRequest tmp = TopicModelingRequest.builder().numberOfTopics(k).build();
+            ParallelTopicModel mdl  = trainLDAModel(docs, tmp);
+            CoherenceMetrics  cm   = calculateAdvancedCoherence(mdl, docs);
+            if (cm.getNpmi() > bestNpmi) {
+                bestNpmi = cm.getNpmi();
+                bestK    = k;
+            }
+            log.info("grid k={}  NPMI={}", k, cm.getNpmi());
+        }
+        log.info("Wybrano k={} (NPMI={})", bestK, bestNpmi);
+        return bestK;
+    }
+
+    private List<Document> prepareDocumentsFromTweets(Map<String, List<ProcessedTweet>> groupedTweets, TopicModelingRequest request, int dynMinTextLen) {
+
+        int minSize = Optional.ofNullable(request.getMinDocumentSize())
+                              .orElse(MIN_DOCUMENT_SIZE);
+
+        List<Document> documents = groupedTweets.entrySet().stream()
+                .filter(e -> e.getValue().size() >= minSize)
+                .map(e -> createDocument(e.getKey(), e.getValue(), request, dynMinTextLen))
+                .filter(Objects::nonNull)
+                .toList();
+
+        log.info("Utworzono {} dokumentów z minimalnym rozmiarem {}", documents.size(), minSize);
+        return documents;
+    }
+
+    private Document createDocument(String documentId, List<ProcessedTweet> tweets, TopicModelingRequest request, int minLen) {
+        StringBuilder sb = new StringBuilder();
+        List<Long> tweetIds = new ArrayList<>();
+
+        for (ProcessedTweet tweet : tweets) {
+            String json = "lemmatized".equals(request.getTokenStrategy())
+                    ? tweet.getTokensLemmatized() : tweet.getTokens();
+
+            sb.append(extractTokensAsText(tweet.getId(), json, request.isSkipMentions()))
+                    .append(' ');
+            tweetIds.add(tweet.getOriginalTweet().getId());
+        }
+        String text = sb.toString().trim();
+        if (text.length() < minLen) return null;
+
+        return new Document(documentId, text, tweetIds, tweets.size());
+    }
+
+    private ParallelTopicModel trainLDAModel(List<Document> documents, TopicModelingRequest request) throws IOException {
+        log.info("Trenuję model LDA na {} utworzonych dokumentach", documents.size());
+
+        // Ustawienia wstepne pipelineu modelu
+        ArrayList<Pipe> pipeList = new ArrayList<>();
+        pipeList.add(new CharSequence2TokenSequence(Pattern.compile("\\S+")));
+        pipeList.add(new TokenSequenceLowercase());
+
+        // opcjonalne bigramy
+        if (request.isUseBigrams()) pipeList.add(new TokenSequenceNGrams(new int[]{2}));
+
+        pipeList.add(new TokenSequence2FeatureSequence()); //wymagane na koncu
+        Pipe pipe = new SerialPipes(pipeList);
+
+        // Utwórz instancje
+        InstanceList instances = new InstanceList(pipe);
+
+        String[] documentsArray = documents.stream()
+                .map(Document::text)
+                .toArray(String[]::new);
+
+        instances.addThruPipe(new StringArrayIterator(documentsArray));
+
+        int k = request.getNumberOfTopics();
+        ParallelTopicModel model = new ParallelTopicModel(k);
+        model.addInstances(instances);
+
+        int numThreadsCalculated = Math.min(numThreads, Runtime.getRuntime().availableProcessors());
+        model.setNumThreads(numThreadsCalculated);
+
+        int iterations = Math.min(Optional.ofNullable(request.getMaxIterations()).orElse(defaultIterations), MAX_MODEL_ITER);
+        model.setNumIterations(iterations);
+
+        //  Griffitha: np: alphaSum = 50/k, beta = 0.01, k - liczba tematow
+        double calculatedAlphaSum = this.alphaSum / k;
+        double beta = this.beta;
+        model.alphaSum = calculatedAlphaSum;
+        model.beta = beta;
+        model.betaSum = beta * instances.getDataAlphabet().size();
+
+        // Zaktualizuj tablicę alpha
+        for (int i = 0; i < k; i++) {
+            model.alpha[i] = alphaSum / k;
+        }
+
+        // MALLET będzie adaptował alpha i beta co 10 iteracj
+        model.setSymmetricAlpha(false);   // asym
+        model.setBurninPeriod(50);        // burn-in
+        model.setOptimizeInterval(10);    // 10 iter
+
+        log.info("Parametry modelu: tematów={}, iteracji={}, wątków={}, alpha={}, beta={}",
+                model.numTopics, iterations, model.getNumTopics(), alphaSum, beta);
+
+
+        // Trenuj model
+        model.estimate();
+
+        log.info("Model LDA wytrenowany pomyślnie");
+        return model;
     }
 
     private Map<String, List<ProcessedTweet>> poolTweetsWithStrategy(List<ProcessedTweet> tweets, String strategy) {
@@ -156,102 +269,6 @@ public class MalletTopicModelingService {
         log.info("Utworzono {} grup tweetow", groupedTweets.size());
 
         return groupedTweets;
-    }
-
-
-    private List<Document> prepareDocumentsFromTweets(Map<String, List<ProcessedTweet>> groupedTweets, TopicModelingRequest request) {
-
-        int minSize = request.getMinDocumentSize() != null ? request.getMinDocumentSize() : MIN_DOCUMENT_SIZE;
-
-        List<Document> documents = groupedTweets.entrySet().stream()
-                .filter(entry -> entry.getValue().size() >= minSize)
-                .map(entry -> createDocument(entry.getKey(), entry.getValue(), request))
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
-
-        log.info("Utworzono {} dokumentów z minimalnym rozmiarem {}", documents.size(), minSize);
-        return documents;
-    }
-
-    private Document createDocument(String documentId, List<ProcessedTweet> tweets, TopicModelingRequest request) {
-        try {
-            StringBuilder textBuilder = new StringBuilder();
-            List<Long> tweetIds = new ArrayList<>();
-
-            for (ProcessedTweet tweet : tweets) {
-                String tokens = switch (request.getTokenStrategy()) {
-                    case "normal" -> extractTokensAsText(tweet.getId(), tweet.getTokens(), request.isSkipMentions());
-                    case "lemmatized" -> extractTokensAsText(tweet.getId(), tweet.getTokensLemmatized(), request.isSkipMentions());
-                    default -> extractTokensAsText(tweet.getId(), tweet.getTokens(), request.isSkipMentions());
-                };
-
-                if (!tokens.isEmpty()) {
-                    textBuilder.append(tokens).append(" ");
-                    tweetIds.add(tweet.getOriginalTweet().getId());
-                }
-            }
-
-            String combinedText = textBuilder.toString().trim();
-            if (combinedText.length() < MIN_DOCUMENT_TEXT_LENGHT) {
-                return null;
-            }
-
-            return new Document(documentId, combinedText, tweetIds, tweets.size());
-        } catch (Exception e) {
-            log.warn("Błąd podczas tworzenia dokumentu {}: {}", documentId, e.getMessage());
-            return null;
-        }
-    }
-
-    private ParallelTopicModel trainLDAModel(List<Document> documents, TopicModelingRequest request) throws IOException {
-        log.info("Trenuję model LDA na {} utworzonych dokumentach", documents.size());
-
-        // Ustawienia wstepne pipelineu modelu
-        ArrayList<Pipe> pipeList = new ArrayList<>();
-        pipeList.add(new CharSequence2TokenSequence(Pattern.compile("\\S+")));
-        pipeList.add(new TokenSequence2FeatureSequence()); //wymagane na koncu
-        Pipe pipe = new SerialPipes(pipeList);
-
-        // Utwórz instancje
-        InstanceList instances = new InstanceList(pipe);
-
-        String[] documentsArray = documents.stream()
-                .map(Document::text)
-                .toArray(String[]::new);
-
-        instances.addThruPipe(new StringArrayIterator(documentsArray));
-
-        ParallelTopicModel model = new ParallelTopicModel(request.getNumberOfTopics());
-        model.addInstances(instances);
-        model.setNumThreads(Math.min(numThreads, 2));
-
-        int iterations = Math.min(
-                request.getMaxIterations() != null ? request.getMaxIterations() : defaultIterations,
-                MAX_MODEL_ITERATIONS
-        );
-        model.setNumIterations(iterations);
-
-        model.alphaSum = alphaSum;
-        model.beta = beta;
-        model.betaSum = beta * instances.getDataAlphabet().size();
-
-        // Zaktualizuj tablicę alpha
-        for (int i = 0; i < model.numTopics; i++) {
-            model.alpha[i] = alphaSum / model.numTopics;
-        }
-
-        log.info("Parametry modelu: tematów={}, iteracji={}, wątków={}, alpha={}, beta={}",
-                model.numTopics, iterations, model.getNumTopics(), alphaSum, beta);
-
-        // MALLET będzie adaptował alpha i beta co 10 iteracj
-        model.setOptimizeInterval(10);
-        model.setBurninPeriod(100);
-
-        // Trenuj model
-        model.estimate();
-
-        log.info("Model LDA wytrenowany pomyślnie");
-        return model;
     }
 
     private void extractAndSaveResults(ParallelTopicModel model, TopicModelingResult modelResult, List<Document> documents) {
@@ -432,21 +449,17 @@ public class MalletTopicModelingService {
         return list;
     }
 
+    private String extractTokensAsText(Long tweetId, String tweetTokensJson, boolean skipMentions) {
 
-    private String extractTokensAsText(Long tweetId, String tweetTokens, boolean skipMentions) {
         try {
-            List<String> tokens = objectMapper.readValue(tweetTokens, new TypeReference<List<String>>() {});
-
-            String text = tokens.stream()
-                    // wyrzuć „@anonymized”, jeśli trzeba
+            List<String> toks = objectMapper.readValue(tweetTokensJson, new TypeReference<>() {});
+            return toks.stream()
                     .filter(t -> !skipMentions || !t.equals("@anonymized"))
-                    .filter(t -> t.length() > 1)
+                    .filter(t -> t.length() > 2 ||
+                            (t.length() == 2 && TWO_LETTER_WHITELIST.contains(t)))
                     .collect(Collectors.joining(" "));
-
-            return text;
-
         } catch (Exception e) {
-            log.warn("Błąd podczas parsowania tokenów dla tweeta {}: {}", tweetId, e.getMessage());
+            log.warn("Token parse error tweet {}", tweetId, e);
             return "";
         }
     }
@@ -600,6 +613,9 @@ public class MalletTopicModelingService {
                 .modelName(model.getModelName())
                 .numberOfTopics(model.getNumberOfTopics())
                 .poolingStrategy(model.getPoolingStrategy())
+                .tokenStrategy(model.getTokenStrategy())
+                .skipMentions(model.isSkipMentions())
+                .isUseBigrams(model.isUseBigrams())
                 .documentsCount(model.getDocumentsCount())
                 .originalTweetsCount(model.getOriginalTweetsCount())
                 .trainingDate(model.getTrainingDate())
@@ -655,4 +671,28 @@ public class MalletTopicModelingService {
                 .averageProbability(topicResult.getAverageProbability())
                 .build();
     }
+
+    private void persistResponse(TopicModelingResponse resp) {
+        try {
+            File dir = new File(responsesDir);
+            if (!dir.exists()) dir.mkdirs();
+
+            String timestamp = LocalDateTime.now()
+                    .format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmm"));
+            String fileName  = String.format(
+                    "model_%d_%s_%s.json",
+                    resp.getModelId(),
+                    resp.getModelName().replaceAll("\\s+", "_"),
+                    timestamp);
+
+            File out = new File(dir, fileName);
+            objectMapper.writerWithDefaultPrettyPrinter()
+                    .writeValue(out, resp);
+
+            log.info("Zapisano TopicModelingResponse → {}", out.getAbsolutePath());
+        } catch (Exception e) {
+            log.error("Nie udało się zapisać response'a", e);
+        }
+    }
+
 }
