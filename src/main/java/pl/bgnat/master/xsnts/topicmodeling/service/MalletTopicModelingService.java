@@ -450,7 +450,6 @@ public class MalletTopicModelingService {
     }
 
     private String extractTokensAsText(Long tweetId, String tweetTokensJson, boolean skipMentions) {
-
         try {
             List<String> toks = objectMapper.readValue(tweetTokensJson, new TypeReference<>() {});
             return toks.stream()

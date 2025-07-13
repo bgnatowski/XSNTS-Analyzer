@@ -10,5 +10,4 @@ import java.util.List;
 public interface TopicModelingResultRepository extends JpaRepository<TopicModelingResult, Long> {
 
     List<TopicModelingResult> findByStatusOrderByTrainingDateDesc(TopicModelingResult.ModelStatus status);
-
 }

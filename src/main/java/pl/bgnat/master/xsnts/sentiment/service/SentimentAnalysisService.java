@@ -1,71 +1,104 @@
 package pl.bgnat.master.xsnts.sentiment.service;
 
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pl.bgnat.master.xsnts.normalization.model.ProcessedTweet;
-import pl.bgnat.master.xsnts.sentiment.model.SentimentResult;
 import pl.bgnat.master.xsnts.normalization.repository.ProcessedTweetRepository;
+import pl.bgnat.master.xsnts.sentiment.service.components.SentimentCalculator;
+import pl.bgnat.master.xsnts.sentiment.dto.SentimentRequest;
+import pl.bgnat.master.xsnts.sentiment.model.SentimentResult;
 import pl.bgnat.master.xsnts.sentiment.repository.SentimentResultRepository;
+import pl.bgnat.master.xsnts.sentiment.service.components.TokenExtractor;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
-@Slf4j
 public class SentimentAnalysisService {
 
-    private static final int PAGE_SIZE = 5_000;
+    @Value("${app.sentiment.flush-batch:5000}")
+    private int flushBatch;
 
-    private final ProcessedTweetRepository processedTweetRepo;
-    private final SentimentResultRepository sentimentRepo;
-    private final SentimentAnalyzer analyzer;
-    @PersistenceContext
-    private EntityManager em;
+    @Value("${app.sentiment.page-size:10000}")
+    private int pageSize;
+
+    private final ProcessedTweetRepository tweetRepo;
+    private final SentimentResultRepository resultRepo;
+    private final SentimentCalculator calculator;
+    private final ObjectMapper mapper;
 
     @Transactional
-    public int analyzeAll() {
-        int page = 0, inserted = 0;
-        long started = System.currentTimeMillis();
+    public int analyzeAll(SentimentRequest request) {
+
+        var extractor = TokenExtractor.of(request.tokenStrategy());
+        long total    = tweetRepo.countWithoutSentiment(
+                request.tokenStrategy(),
+                request.sentimentModelStrategy());
+
+        log.info("Do analizy: {} tweetów", total);
+
+        int saved = 0;
 
         while (true) {
-            log.info("📥  Strona={}  size={}", page, PAGE_SIZE);
-            Page<ProcessedTweet> tweets =
-                    processedTweetRepo.findAll(PageRequest.of(page, PAGE_SIZE));
+            Page<ProcessedTweet> page =
+                    tweetRepo.findAllWithoutSentiment(
+                            request.tokenStrategy(),
+                            request.sentimentModelStrategy(),
+                            PageRequest.of(0, pageSize));
 
-            if (tweets.isEmpty()) break;
+            if (page.isEmpty()) break;
 
-            long t0 = System.currentTimeMillis();
-            var results = tweets.getContent().parallelStream()
-                    .map(this::buildResult)
-                    .toList();
-            sentimentRepo.saveAll(results);
-            inserted += results.size();
+            List<SentimentResult> buffer = new ArrayList<>(flushBatch);
 
-            sentimentRepo.flush();
-            em.clear();
-
-            long t1 = System.currentTimeMillis();
-            log.info("✅  Strona={}  records={}  time={} ms", page, results.size(), t1 - t0);
-            page++;
+            for (ProcessedTweet t : page) {
+                buildResult(t, extractor, request).ifPresent(buffer::add);
+                if (buffer.size() == flushBatch) {
+                    resultRepo.saveAll(buffer);
+                    saved += buffer.size();
+                    buffer.clear();
+                }
+            }
+            if (!buffer.isEmpty()) {
+                resultRepo.saveAll(buffer);
+                saved += buffer.size();
+            }
+            log.info("Postęp: {}/{}", saved, total);
         }
-        long total = System.currentTimeMillis() - started;
-        log.info("🏁  Zakończono batch — nowych wyników={}  łączny czas={} ms", inserted, total);
-        return inserted;
+        log.info("Analiza zakończona – wstawiono {} z {} rekordów", saved, total);
+        return saved;
     }
 
-    private SentimentResult buildResult(ProcessedTweet pt) {
-        double score = analyzer.computeScore(pt.getNormalizedContent());
-        return SentimentResult.builder()
-                .processedTweet(pt)
-                .score(score)
-                .label(analyzer.classify(score))
-                .analysisDate(LocalDateTime.now())
-                .build();
+    private Optional<SentimentResult> buildResult(ProcessedTweet tweet,
+                                                  TokenExtractor extractor,
+                                                  SentimentRequest request) {
+        try {
+            List<String> tokens = mapper.readValue(extractor.extract(tweet),
+                    new TypeReference<>() {});
+            var score = calculator.evaluate(tokens);
+
+            return Optional.of(SentimentResult.builder()
+                    .processedTweet(tweet)
+                    .tokenStrategy(request.tokenStrategy())
+                    .sentimentModelStrategy(request.sentimentModelStrategy())
+                    .label(score.label())
+                    .score(score.value())
+                    .analysisDate(LocalDateTime.now())
+                    .build());
+
+        } catch (Exception e) {
+            log.warn("Tweet {} pominięty – {}", tweet.getId(), e.getMessage());
+            return Optional.empty();
+        }
     }
 }

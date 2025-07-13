@@ -3,7 +3,8 @@ package pl.bgnat.master.xsnts.sentiment.controller;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import pl.bgnat.master.xsnts.sentiment.model.TopicSentimentStats;
+import pl.bgnat.master.xsnts.sentiment.dto.SentimentRequest;
+import pl.bgnat.master.xsnts.sentiment.dto.TopicSentimentStats;
 import pl.bgnat.master.xsnts.sentiment.service.SentimentAnalysisService;
 import pl.bgnat.master.xsnts.sentiment.service.TopicSentimentAnalysisService;
 
@@ -15,20 +16,19 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class SentimentController {
 
-    private final SentimentAnalysisService service;
-    private final TopicSentimentAnalysisService analysisService;
+    private final SentimentAnalysisService sentimentAnalysisService;
+    private final TopicSentimentAnalysisService topicSentimentAnalysisService;
 
-    /** endpoint batch – zwraca liczbę nowych wyników */
+    /** endpoint batch - analiza wszyskich processed tweets */
     @PostMapping("/analyze-all")
-    public ResponseEntity<Map<String, Object>> analyzeAll() {
-        int created = service.analyzeAll();
-        return ResponseEntity.ok(
-                Map.of("insertedResults", created,
-                        "message", "Batch sentiment analysis completed"));
+    public ResponseEntity<Map<String, Object>> analyzeAll(@RequestBody SentimentRequest request) {
+        int created = sentimentAnalysisService.analyzeAll(request);
+        return ResponseEntity.ok(Map.of("Utworzono:", created, "message", "Analiza sentymentu zakończona."));
     }
 
+    /** Na podstawie przeanalizowanych SentimentResult wylicza sentyment poszczególnych Topiców według modelId*/
     @GetMapping("/{modelId}/stats")
     public ResponseEntity<List<TopicSentimentStats>> getStats(@PathVariable Long modelId) {
-        return ResponseEntity.ok(analysisService.getSentimentStatsForModel(modelId));
+        return ResponseEntity.ok(topicSentimentAnalysisService.getSentimentStatsForModel(modelId));
     }
 }
