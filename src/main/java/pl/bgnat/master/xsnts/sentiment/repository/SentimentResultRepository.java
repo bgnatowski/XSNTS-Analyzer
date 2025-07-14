@@ -22,4 +22,5 @@ public interface SentimentResultRepository extends JpaRepository<SentimentResult
     @Query("SELECT sr FROM SentimentResult sr WHERE sr.processedTweet.originalTweet.id IN :tweetIds")
     List<SentimentResult> findAllByProcessedTweetIdIn(@Param("tweetIds") Set<Long> tweetIds);
 
+    long countByProcessedTweetIdNotIn(Set<Long> longs);
 }

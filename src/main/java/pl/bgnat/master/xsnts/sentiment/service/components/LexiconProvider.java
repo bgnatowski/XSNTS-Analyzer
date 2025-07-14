@@ -30,15 +30,19 @@ public class LexiconProvider {
     void init() {
         try {
             Resource resource = loader.getResource(lexiconPath);
-            try (var reader = new BufferedReader(
+            try (BufferedReader reader = new BufferedReader(
                     new InputStreamReader(resource.getInputStream(), StandardCharsets.UTF_8))) {
 
                 this.lexicon = reader.lines()
                         .filter(l -> !l.isBlank() && !l.startsWith("#"))
                         .map(l -> l.split("\\s+"))
-                        .collect(Collectors.toUnmodifiableMap(
-                                t -> t[0].toLowerCase(),
-                                t -> Double.parseDouble(t[1])));
+                        .collect(Collectors.collectingAndThen(
+                                Collectors.toMap(
+                                        t -> t[0].toLowerCase(),                // klucz
+                                        t -> Double.parseDouble(t[1]),          // wartość
+                                        Double::min                                     // merge ⇒ mniejsza wartość
+                                ),
+                                Map::copyOf));
 
                 log.info("Lexicon loaded – {} entries", lexicon.size());
             }

@@ -13,6 +13,7 @@ import pl.bgnat.master.xsnts.normalization.model.ProcessedTweet;
 import pl.bgnat.master.xsnts.sentiment.dto.SentimentStrategyLabel;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
@@ -140,5 +141,7 @@ public interface ProcessedTweetRepository extends JpaRepository<ProcessedTweet, 
     long countWithoutSentiment(
             @Param("tokenStrategy")          TokenStrategyLabel tokenStrategy,
             @Param("sentimentModelStrategy") SentimentStrategyLabel sentimentModelStrategy);
+
+    List<ProcessedTweet> findByOriginalTweetIdIn(Collection<Long> originalIds);
 
 }

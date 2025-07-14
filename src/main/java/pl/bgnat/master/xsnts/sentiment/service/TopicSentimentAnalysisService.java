@@ -2,18 +2,24 @@ package pl.bgnat.master.xsnts.sentiment.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.annotation.Nullable;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import pl.bgnat.master.xsnts.normalization.model.ProcessedTweet;
+import pl.bgnat.master.xsnts.normalization.repository.ProcessedTweetRepository;
 import pl.bgnat.master.xsnts.normalization.dto.TokenStrategyLabel;
 import pl.bgnat.master.xsnts.sentiment.dto.SentimentStrategyLabel;
 import pl.bgnat.master.xsnts.sentiment.dto.TopicSentimentStats;
+import pl.bgnat.master.xsnts.sentiment.model.SentimentResult;
 import pl.bgnat.master.xsnts.sentiment.model.TopicSentimentStatsEntity;
 import pl.bgnat.master.xsnts.sentiment.repository.SentimentResultRepository;
 import pl.bgnat.master.xsnts.sentiment.repository.TopicSentimentStatsRepository;
 import pl.bgnat.master.xsnts.topicmodeling.model.DocumentTopicAssignment;
+import pl.bgnat.master.xsnts.topicmodeling.model.TopicResult;
 import pl.bgnat.master.xsnts.topicmodeling.repository.DocumentTopicAssignmentRepository;
+import pl.bgnat.master.xsnts.topicmodeling.repository.TopicResultRepository;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -28,57 +34,97 @@ import java.util.stream.Collectors;
 public class TopicSentimentAnalysisService {
 
     private final DocumentTopicAssignmentRepository assignmentRepo;
+    private final TopicResultRepository topicResultRepo;
+    private final ProcessedTweetRepository processedTweetRepo;
     private final SentimentResultRepository sentimentRepo;
     private final TopicSentimentStatsRepository statsRepo;
     private final ObjectMapper mapper;
 
+    /* ============================================================ */
+    /* ======================   API PUBLICZNE   ==================== */
+    /* ============================================================ */
+
     @Transactional
     public List<TopicSentimentStats> getSentimentStatsForModel(Long modelId) {
-        List<DocumentTopicAssignment> assignments = assignmentRepo.findByTopicModelingResultId(modelId);
 
-        Map<Long, Integer> tweetToTopic = new HashMap<>();
-        Map<Integer, String> topicLabels = new HashMap<>();
-
-        // tweetIds są przechowywane w kolumnie JSON – zamieniamy na listę Long
-        for (DocumentTopicAssignment a : assignments) {
-            topicLabels.put(a.getDominantTopicId(), a.getDocumentId());
-            List<Long> ids = parseIds(a.getTweetIds());
-            ids.forEach(id -> tweetToTopic.put(id, a.getDominantTopicId()));
+        /* -------- 1. zestawienie tweet → topic ------------------ */
+        Map<Long, Integer> processedIdToTopic = buildProcessedIdTopicMap(modelId);
+        if (processedIdToTopic.isEmpty()) {
+            log.warn("Model {} nie posiada tweetów z przypisanym tematem", modelId);
+            return List.of();
         }
 
-        // Pobrane wyniki sentymentu pogrupowane po topicId
-        Map<Integer, List<Double>> groupedScores =
-                sentimentRepo.findAllByProcessedTweetIdIn(tweetToTopic.keySet()).stream()
-                        .collect(Collectors.groupingBy(
-                                r -> tweetToTopic.get(r.getProcessedTweet().getId()),
-                                Collectors.mapping(r -> {
-                                    // przechowujemy także label → agregacje będą potrzebne
-                                    // tutaj zwracamy tylko score – label policzymy później
-                                    return r.getScore();
-                                }, Collectors.toList())
-                        ));
+        /* -------- 2. pobranie wyników sentymentu ---------------- */
+        Map<Integer, List<Double>> groupedScores = sentimentRepo
+                .findAllByProcessedTweetIdIn(processedIdToTopic.keySet()).stream()
+                .filter(sr -> processedIdToTopic.containsKey(sr.getProcessedTweet().getId()))
+                .collect(Collectors.groupingBy(
+                        sr -> processedIdToTopic.get(sr.getProcessedTweet().getId()),
+                        Collectors.mapping(SentimentResult::getScore, Collectors.toList())
+                ));
 
-        List<TopicSentimentStats> dtoList = groupedScores.entrySet().stream()
+        long orphan = sentimentRepo.countByProcessedTweetIdNotIn(processedIdToTopic.keySet());
+        log.info("Model {} – wyników sentymentu bez dopasowania: {}", modelId, orphan);
+
+        if (groupedScores.isEmpty()) {
+            log.warn("Model {} – brak dopasowanych wyników sentymentu", modelId);
+            return List.of();
+        }
+
+        /* -------- 3. etykiety tematów --------------------------- */
+        Map<Integer, String> topicLabels = topicResultRepo
+                .findByTopicModelingResultId(modelId).stream()
+                .collect(Collectors.toMap(TopicResult::getTopicId,
+                        TopicResult::getTopicLabel));
+
+        /* -------- 4. budowa DTO -------------------------------- */
+        List<TopicSentimentStats> stats = groupedScores.entrySet().stream()
                 .map(e -> buildStats(modelId.intValue(),
                         e.getKey(),
-                        topicLabels.getOrDefault(e.getKey(), "N/A"),
+                        topicLabels.get(e.getKey()),
                         e.getValue()))
                 .sorted(Comparator.comparingInt(TopicSentimentStats::getTopicId))
                 .toList();
 
-        persist(dtoList);
-        exportJson(dtoList);
+        /* -------- 5. zapis + eksport --------------------------- */
+        persist(stats);
+        exportJson(stats);
 
-        return dtoList;
+        return stats;
     }
 
-    /* ---------- helpers ---------- */
 
-    private List<Long> parseIds(String json) {
+    /** Mapuje processedTweet.id → topicId dla wszystkich tweetów użytych w modelu */
+    private Map<Long, Integer> buildProcessedIdTopicMap(Long modelId) {
+
+        List<DocumentTopicAssignment> assignments =
+                assignmentRepo.findByTopicModelingResultId(modelId);
+
+        if (assignments.isEmpty()) return Map.of();
+
+        /* originalTweetId → topicId */
+        Map<Long, Integer> originalToTopic = new HashMap<>();
+        assignments.forEach(a ->
+                parseIds(a.getTweetIds())
+                        .forEach(id -> originalToTopic.put(id, a.getDominantTopicId()))
+        );
+
+        if (originalToTopic.isEmpty()) return Map.of();
+
+        /* processedTweet.id → topicId */
+        return processedTweetRepo.findByOriginalTweetIdIn(originalToTopic.keySet()).stream()
+                .collect(Collectors.toMap(
+                        ProcessedTweet::getId,
+                        pt -> originalToTopic.get(pt.getOriginalTweet().getId())
+                ));
+    }
+
+    private List<Long> parseIds(@Nullable String json) {
+        if (json == null || json.isBlank()) return List.of();
         try {
             return mapper.readValue(json, new TypeReference<>() {});
         } catch (Exception e) {
-            log.warn("Cannot parse tweetIds JSON", e);
+            log.debug("Niepoprawny JSON z tweetIds: {}", e.getMessage());
             return List.of();
         }
     }
@@ -88,43 +134,42 @@ public class TopicSentimentAnalysisService {
                                            String topicLabel,
                                            List<Double> scores) {
 
-        long pos = scores.stream().filter(s -> s > 0.1).count();
-        long neg = scores.stream().filter(s -> s < -0.1).count();
-        long tot = scores.size();
-        long neu = tot - pos - neg;
-        double avg = scores.stream().mapToDouble(Double::doubleValue).average().orElse(0);
+        long positive = scores.stream().filter(s -> s > 0.1).count();
+        long negative = scores.stream().filter(s -> s < -0.1).count();
+        long total    = scores.size();
+        long neutral  = total - positive - negative;
+        double avg    = scores.stream().mapToDouble(Double::doubleValue).average().orElse(0);
 
         return TopicSentimentStats.builder()
                 .modelId(modelId)
-                .tokenStrategy(TokenStrategyLabel.NORMAL)           // tylko NORMAL w tej iteracji
+                .tokenStrategy(TokenStrategyLabel.NORMAL)
                 .sentimentModelStrategy(SentimentStrategyLabel.STANDARD)
                 .topicId(topicId)
-                .topicLabel(topicLabel)
-                .positive(pos)
-                .neutral(neu)
-                .negative(neg)
-                .total(tot)
-                .positiveRatio(round(pos * 100.0 / tot))
-                .negativeRatio(round(neg * 100.0 / tot))
+                .topicResultLabel(Optional.ofNullable(topicLabel).orElse("n/a"))
+                .positive(positive)
+                .neutral(neutral)
+                .negative(negative)
+                .total(total)
+                .positiveRatio(round(positive * 100.0 / total))
+                .negativeRatio(round(negative * 100.0 / total))
                 .avgScore(round(avg))
                 .build();
     }
 
     private void persist(List<TopicSentimentStats> stats) {
         List<TopicSentimentStatsEntity> entities = stats.stream()
-                .map(this::toEntity)
+                .map(this::mapToEntity)
                 .toList();
-
         statsRepo.saveAll(entities);
     }
 
-    private TopicSentimentStatsEntity toEntity(TopicSentimentStats dto) {
+    private TopicSentimentStatsEntity mapToEntity(TopicSentimentStats dto) {
         return TopicSentimentStatsEntity.builder()
                 .modelId(dto.getModelId())
                 .tokenStrategy(dto.getTokenStrategy())
                 .sentimentModelStrategy(dto.getSentimentModelStrategy())
                 .topicId(dto.getTopicId())
-                .topicLabel(dto.getTopicLabel())
+                .topicResultLabel(dto.getTopicResultLabel())
                 .positive(dto.getPositive())
                 .neutral(dto.getNeutral())
                 .negative(dto.getNegative())
@@ -147,7 +192,6 @@ public class TopicSentimentAnalysisService {
                 first.getSentimentModelStrategy().name().toLowerCase(),
                 LocalDate.now());
 
-
         try {
             Files.createDirectories(Path.of("output/sentiment_responses"));
             mapper.writerWithDefaultPrettyPrinter()
@@ -155,7 +199,7 @@ public class TopicSentimentAnalysisService {
 
             log.info("Sentiment stats exported to {}", file);
         } catch (Exception e) {
-            log.error("Export failed", e);
+            log.error("Export failed: {}", e.getMessage());
         }
     }
 
