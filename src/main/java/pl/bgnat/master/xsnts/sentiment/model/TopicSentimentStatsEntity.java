@@ -38,7 +38,7 @@ public class TopicSentimentStatsEntity {
     private SentimentStrategyLabel sentimentModelStrategy;
 
     @Column(name = "topic_id", nullable = false)
-    private int topicId; // z document_topic_assginment
+    private int topicId;             // z document_topic_assginment
 
     @Column(name = "topic_result_label", length = 128, nullable = false)
     private String topicResultLabel; // 3 top wordsy z topic_result

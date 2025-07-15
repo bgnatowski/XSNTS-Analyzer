@@ -1,4 +1,4 @@
-package pl.bgnat.master.xsnts.sentiment.service.components;
+package pl.bgnat.master.xsnts.sentiment.service.factory;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

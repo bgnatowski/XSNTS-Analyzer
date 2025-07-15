@@ -1,4 +1,4 @@
-package pl.bgnat.master.xsnts.sentiment.service.components;
+package pl.bgnat.master.xsnts.sentiment.service.factory;
 
 import pl.bgnat.master.xsnts.sentiment.dto.SentimentScore;
 

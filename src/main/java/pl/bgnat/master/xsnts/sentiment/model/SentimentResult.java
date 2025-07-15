@@ -26,7 +26,6 @@ public class SentimentResult {
             allocationSize = 1)
     private Long id;
 
-    // powinno być:
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "processed_tweet_id", nullable = false)
     private ProcessedTweet processedTweet;
@@ -44,7 +43,7 @@ public class SentimentResult {
     private SentimentStrategyLabel sentimentModelStrategy;
 
     @Column(name = "score", nullable = false)
-    private double score;               // surowy wynik (suma polaryzacji)
+    private double score;
 
     @Column(name = "analysis_date", nullable = false)
     private LocalDateTime analysisDate;

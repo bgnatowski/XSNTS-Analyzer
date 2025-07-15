@@ -13,8 +13,8 @@ import pl.bgnat.master.xsnts.normalization.repository.ProcessedTweetRepository;
 import pl.bgnat.master.xsnts.sentiment.dto.SentimentRequest;
 import pl.bgnat.master.xsnts.sentiment.model.SentimentResult;
 import pl.bgnat.master.xsnts.sentiment.repository.SentimentResultRepository;
-import pl.bgnat.master.xsnts.sentiment.service.components.SentimentCalculator;
-import pl.bgnat.master.xsnts.sentiment.service.components.SentimentCalculatorFactory;
+import pl.bgnat.master.xsnts.sentiment.service.factory.SentimentCalculator;
+import pl.bgnat.master.xsnts.sentiment.service.factory.SentimentCalculatorFactory;
 import pl.bgnat.master.xsnts.sentiment.service.components.TokenExtractor;
 
 import java.time.LocalDateTime;
@@ -33,18 +33,19 @@ public class SentimentAnalysisService {
     @Value("${app.sentiment.page-size:10000}")
     private int pageSize;
 
-    private final ProcessedTweetRepository   tweetRepo;
-    private final SentimentResultRepository  resultRepo;
-    private final SentimentCalculatorFactory calculatorFactory;
-    private final ObjectMapper               mapper;
+    private final ProcessedTweetRepository processedTweetRepository;
+    private final SentimentResultRepository sentimentResultRepository;
+    private final SentimentCalculatorFactory sentimentCalculatorFactory;
+    private final ObjectMapper objectMapper;
+
 
     @Transactional
     public int analyzeAll(SentimentRequest request) {
 
-        SentimentCalculator calculator = calculatorFactory.choose(request.sentimentModelStrategy());
-        TokenExtractor      extractor  = TokenExtractor.of(request.tokenStrategy());
+        SentimentCalculator calculator = sentimentCalculatorFactory.choose(request.sentimentModelStrategy());
+        TokenExtractor extractor = TokenExtractor.of(request.tokenStrategy());
 
-        long total = tweetRepo.countWithoutSentiment(
+        long total = processedTweetRepository.countWithoutSentiment(
                 request.tokenStrategy(),
                 request.sentimentModelStrategy());
 
@@ -53,7 +54,7 @@ public class SentimentAnalysisService {
         int saved = 0;
 
         while (true) {
-            var page = tweetRepo.findAllWithoutSentiment(
+            var page = processedTweetRepository.findAllWithoutSentiment(
                     request.tokenStrategy(),
                     request.sentimentModelStrategy(),
                     PageRequest.of(0, pageSize));
@@ -66,13 +67,13 @@ public class SentimentAnalysisService {
                 buildResult(tweet, extractor, calculator, request).ifPresent(buffer::add);
 
                 if (buffer.size() == flushBatch) {
-                    resultRepo.saveAll(buffer);
+                    sentimentResultRepository.saveAll(buffer);
                     saved += buffer.size();
                     buffer.clear();
                 }
             }
             if (!buffer.isEmpty()) {
-                resultRepo.saveAll(buffer);
+                sentimentResultRepository.saveAll(buffer);
                 saved += buffer.size();
             }
             log.info("Postęp: {}/{}", saved, total);
@@ -81,13 +82,20 @@ public class SentimentAnalysisService {
         return saved;
     }
 
+    @Transactional
+    public int deleteFromDb(SentimentRequest req) {
+        return sentimentResultRepository.deleteByTokenStrategyAndSentimentModelStrategy(
+                req.tokenStrategy(), req.sentimentModelStrategy());
+    }
+
     private Optional<SentimentResult> buildResult(ProcessedTweet tweet,
                                                   TokenExtractor extractor,
                                                   SentimentCalculator calculator,
                                                   SentimentRequest request) {
         try {
-            List<String> tokens = mapper.readValue(extractor.extract(tweet),
-                    new TypeReference<>() {});
+            List<String> tokens = objectMapper.readValue(extractor.extract(tweet),
+                    new TypeReference<>() {
+                    });
             var score = calculator.evaluate(tokens);
 
             return Optional.of(SentimentResult.builder()

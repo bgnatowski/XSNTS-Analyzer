@@ -32,12 +32,12 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class TopicSentimentAnalysisService {
 
-    private final DocumentTopicAssignmentRepository assignmentRepo;
-    private final TopicResultRepository             topicResultRepo;
-    private final ProcessedTweetRepository          processedTweetRepo;
-    private final SentimentResultRepository         sentimentRepo;
-    private final TopicSentimentStatsRepository     statsRepo;
-    private final ObjectMapper                      mapper;
+    private final DocumentTopicAssignmentRepository documentTopicAssignmentRepository;
+    private final TopicResultRepository topicResultRepository;
+    private final ProcessedTweetRepository processedTweetRepository;
+    private final SentimentResultRepository sentimentResultRepository;
+    private final TopicSentimentStatsRepository topicSentimentStatsRepository;
+    private final ObjectMapper objectMapper;
 
     @Transactional
     public List<TopicSentimentStats> getSentimentStatsForModel(
@@ -50,8 +50,9 @@ public class TopicSentimentAnalysisService {
             return List.of();
         }
 
-        /* ---------- 1. Pobranie wyników sentymentu dla danej strategii ------ */
-        List<SentimentResult> results = sentimentRepo
+        // 1. Pobranie wyników sentymentu dla danej strategii
+        log.info("Pobieranie wyników dla: {} / {} po topicId", request.tokenStrategy(), request.sentimentModelStrategy());
+        List<SentimentResult> results = sentimentResultRepository
                 .findAllByProcessedTweetIdInAndTokenStrategyAndSentimentModelStrategy(
                         processedIdToTopic.keySet(),
                         request.tokenStrategy(),
@@ -64,26 +65,24 @@ public class TopicSentimentAnalysisService {
         }
 
         log.info("Grupowanie po topicId");
-        /* ---------- 2. Grupowanie po topicId -------------------------------- */
         Map<Integer, List<SentimentResult>> grouped = results.stream()
                 .collect(Collectors.groupingBy(
                         r -> processedIdToTopic.get(r.getProcessedTweet().getId())
                 ));
 
         log.info("Tworzenie etykiet tematów");
-        /* ---------- 3. Etykiety tematów ------------------------------------- */
-        Map<Integer, String> topicLabels = topicResultRepo
+        Map<Integer, String> topicLabels = topicResultRepository
                 .findByTopicModelingResultId(modelId).stream()
                 .collect(Collectors.toMap(TopicResult::getTopicId, TopicResult::getTopicLabel));
 
         log.info("Budowanie DTO");
-        /* ---------- 4. Budowa DTO ------------------------------------------- */
         List<TopicSentimentStats> stats = grouped.entrySet().stream()
                 .map(e -> buildStats(modelId.intValue(),
                         e.getKey(),
                         topicLabels.get(e.getKey()),
                         e.getValue(),
-                        request.sentimentModelStrategy()))
+                        request.sentimentModelStrategy(),
+                        request.tokenStrategy()))
                 .sorted(Comparator.comparingInt(TopicSentimentStats::getTopicId))
                 .toList();
 
@@ -95,15 +94,11 @@ public class TopicSentimentAnalysisService {
         return stats;
     }
 
-    /* ===================================================================== */
-    /* =====================  METODY POMOCNICZE  =========================== */
-    /* ===================================================================== */
-
     /** Mapuje processedTweet.id → topicId */
     private Map<Long, Integer> buildProcessedIdTopicMap(Long modelId) {
 
         List<DocumentTopicAssignment> assignments =
-                assignmentRepo.findByTopicModelingResultId(modelId);
+                documentTopicAssignmentRepository.findByTopicModelingResultId(modelId);
 
         if (assignments.isEmpty()) return Map.of();
 
@@ -115,7 +110,7 @@ public class TopicSentimentAnalysisService {
 
         if (originalToTopic.isEmpty()) return Map.of();
 
-        return processedTweetRepo.findByOriginalTweetIdIn(originalToTopic.keySet()).stream()
+        return processedTweetRepository.findByOriginalTweetIdIn(originalToTopic.keySet()).stream()
                 .collect(Collectors.toMap(
                         ProcessedTweet::getId,
                         pt -> originalToTopic.get(pt.getOriginalTweet().getId())
@@ -125,24 +120,24 @@ public class TopicSentimentAnalysisService {
     private List<Long> parseIds(@Nullable String json) {
         if (json == null || json.isBlank()) return List.of();
         try {
-            return mapper.readValue(json, new TypeReference<>() {});
+            return objectMapper.readValue(json, new TypeReference<>() {});
         } catch (Exception e) {
             log.debug("Niepoprawny JSON z tweetIds: {}", e.getMessage());
             return List.of();
         }
     }
 
-    /* ---------- budowanie statystyk dla jednego topicu -------------------- */
     private TopicSentimentStats buildStats(int modelId,
                                            int topicId,
                                            String topicLabel,
                                            List<SentimentResult> list,
-                                           SentimentStrategyLabel strategy) {
+                                           SentimentStrategyLabel sentimentStrategyLabel,
+                                           TokenStrategyLabel tokenStrategyLabel) {
 
         long pos, neu, neg;
         double avgScore;
 
-        if (strategy == SentimentStrategyLabel.STANDARD) {   // leksykon
+        if (sentimentStrategyLabel == SentimentStrategyLabel.STANDARD) {   // leksykon
             List<Double> scores = list.stream()
                     .map(SentimentResult::getScore)
                     .toList();
@@ -151,7 +146,7 @@ public class TopicSentimentAnalysisService {
             neu = scores.size() - pos - neg;
             avgScore = scores.stream().mapToDouble(Double::doubleValue).average().orElse(0);
 
-        } else {                                             // HF_API / SVM_AND_BOW
+        } else {                                             // HF_API
             pos = list.stream().filter(r -> r.getLabel() == SentimentLabel.POSITIVE).count();
             neg = list.stream().filter(r -> r.getLabel() == SentimentLabel.NEGATIVE).count();
             neu = list.size() - pos - neg;
@@ -162,8 +157,8 @@ public class TopicSentimentAnalysisService {
 
         return TopicSentimentStats.builder()
                 .modelId(modelId)
-                .tokenStrategy(TokenStrategyLabel.NORMAL)           // w razie potrzeby przekazuj z requestu
-                .sentimentModelStrategy(strategy)
+                .tokenStrategy(tokenStrategyLabel)
+                .sentimentModelStrategy(sentimentStrategyLabel)
                 .topicId(topicId)
                 .topicResultLabel(Optional.ofNullable(topicLabel).orElse("n/a"))
                 .positive(pos)
@@ -176,12 +171,11 @@ public class TopicSentimentAnalysisService {
                 .build();
     }
 
-    /* ---------- zapis do DB ---------------------------------------------- */
     private void persist(List<TopicSentimentStats> stats) {
         List<TopicSentimentStatsEntity> entities = stats.stream()
                 .map(this::mapToEntity)
                 .toList();
-        statsRepo.saveAll(entities);
+        topicSentimentStatsRepository.saveAll(entities);
     }
 
     private TopicSentimentStatsEntity mapToEntity(TopicSentimentStats dto) {
@@ -202,7 +196,6 @@ public class TopicSentimentAnalysisService {
                 .build();
     }
 
-    /* ---------- eksport JSON --------------------------------------------- */
     private void exportJson(List<TopicSentimentStats> stats) {
         if (stats.isEmpty()) return;
 
@@ -216,7 +209,7 @@ public class TopicSentimentAnalysisService {
 
         try {
             Files.createDirectories(Path.of("output/sentiment_responses"));
-            mapper.writerWithDefaultPrettyPrinter()
+            objectMapper.writerWithDefaultPrettyPrinter()
                     .writeValue(Path.of(file).toFile(), stats);
             log.info("Sentiment stats exported to {}", file);
         } catch (Exception e) {
@@ -224,6 +217,5 @@ public class TopicSentimentAnalysisService {
         }
     }
 
-    /* ---------- util ------------------------------------------------------ */
     private static double round(double v) { return Math.round(v * 100.0) / 100.0; }
 }

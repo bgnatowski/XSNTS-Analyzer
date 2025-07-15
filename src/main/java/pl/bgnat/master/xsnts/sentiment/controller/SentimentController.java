@@ -34,4 +34,10 @@ public class SentimentController {
         return topicSentimentAnalysisService.getSentimentStatsForModel(modelId, request);
     }
 
+    /** Pozwala usunac wczenienj zrobiona analize dla modelu */
+    @DeleteMapping
+    public ResponseEntity<String> delete(@RequestBody SentimentRequest request) {
+        int removed = sentimentAnalysisService.deleteFromDb(request);
+        return ResponseEntity.ok("Usunięto " + removed + " rekordów");
+    }
 }

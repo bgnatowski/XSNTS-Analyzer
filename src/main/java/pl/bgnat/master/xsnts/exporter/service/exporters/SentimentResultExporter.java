@@ -17,9 +17,10 @@ import java.time.format.DateTimeFormatter;
 public class SentimentResultExporter implements Exporter {
     private static final DateTimeFormatter ISO = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
     private static final String[] HEAD_SENTIMENT = {
-            "tweet_id", "username", "normalized_content",
-            "token_count", "sentiment_label", "sentiment_score",
-            "likes", "reposts", "comments", "views", "post_date"
+            "tweet_id","username","normalized_content","token_count",
+            "sentiment_label","sentiment_score",
+            "token_strategy","sentiment_model_strategy",
+            "likes","reposts","comments","views","post_date"
     };
 
     private final SentimentResultRepository sentimentRepo;
@@ -38,6 +39,8 @@ public class SentimentResultExporter implements Exporter {
                         CsvWriterUtil.esc(p.getNormalizedContent()),
                         String.valueOf(p.getTokenCount()),
                         r.getLabel().name(),
+                        r.getTokenStrategy().name(),
+                        r.getSentimentModelStrategy().name(),
                         String.valueOf(r.getScore()),
                         String.valueOf(t.getLikeCount()),
                         String.valueOf(t.getRepostCount()),

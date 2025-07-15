@@ -12,8 +12,8 @@ import java.io.FileWriter;
 import java.io.IOException;
 
 /**
- * Eksportuje tematy pojedynczego modelu LDA/BERTopic do pliku CSV.
- * Plik ląduje domyślnie w:  output/csv/topic_model/
+ * Eksportuje tematy pojedynczego modelu LDA do pliku CSV.
+ * Plik ląduje domyślnie w: output/csv/topic_model/
  */
 @Component
 @RequiredArgsConstructor
