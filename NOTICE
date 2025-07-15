@@ -1,0 +1,7 @@
+This project includes software developed by:
+
+• tabularisai et al. – "multilingual-sentiment-analysis" (Hugging Face, DOI 10.57967/hf/5968)
+• Dawid Weiss, Marcin Miłkowski – Morfologik Stemming (BSD-3)
+• McCallum, Andrew Kachites.  "MALLET: A Machine Learning for Language Toolkit." http://mallet.cs.umass.edu. 2002.
+
+Full license texts are located in the THIRD_PARTY_LICENSES directory.
