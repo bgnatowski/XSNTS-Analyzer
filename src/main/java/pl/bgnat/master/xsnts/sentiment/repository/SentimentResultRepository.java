@@ -4,6 +4,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import pl.bgnat.master.xsnts.normalization.dto.TokenStrategyLabel;
+import pl.bgnat.master.xsnts.sentiment.dto.SentimentStrategyLabel;
 import pl.bgnat.master.xsnts.sentiment.model.SentimentResult;
 
 import java.util.List;
@@ -23,4 +25,6 @@ public interface SentimentResultRepository extends JpaRepository<SentimentResult
     List<SentimentResult> findAllByProcessedTweetIdIn(@Param("tweetIds") Set<Long> tweetIds);
 
     long countByProcessedTweetIdNotIn(Set<Long> longs);
+
+    List<SentimentResult> findAllByProcessedTweetIdInAndTokenStrategyAndSentimentModelStrategy(Set<Long> longs, TokenStrategyLabel tokenStrategyLabel, SentimentStrategyLabel sentimentStrategyLabel);
 }

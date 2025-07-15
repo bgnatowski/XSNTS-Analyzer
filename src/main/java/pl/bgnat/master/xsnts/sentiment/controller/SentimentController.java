@@ -26,9 +26,12 @@ public class SentimentController {
         return ResponseEntity.ok(Map.of("Utworzono:", created, "message", "Analiza sentymentu zakończona."));
     }
 
+
     /** Na podstawie przeanalizowanych SentimentResult wylicza sentyment poszczególnych Topiców według modelId*/
     @GetMapping("/{modelId}/stats")
-    public ResponseEntity<List<TopicSentimentStats>> getStats(@PathVariable Long modelId) {
-        return ResponseEntity.ok(topicSentimentAnalysisService.getSentimentStatsForModel(modelId));
+    public List<TopicSentimentStats> stats(@PathVariable Long modelId,
+                                           @RequestBody SentimentRequest request) {
+        return topicSentimentAnalysisService.getSentimentStatsForModel(modelId, request);
     }
+
 }

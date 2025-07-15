@@ -2,19 +2,19 @@ package pl.bgnat.master.xsnts.sentiment.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import pl.bgnat.master.xsnts.normalization.model.ProcessedTweet;
 import pl.bgnat.master.xsnts.normalization.repository.ProcessedTweetRepository;
-import pl.bgnat.master.xsnts.sentiment.service.components.SentimentCalculator;
 import pl.bgnat.master.xsnts.sentiment.dto.SentimentRequest;
 import pl.bgnat.master.xsnts.sentiment.model.SentimentResult;
 import pl.bgnat.master.xsnts.sentiment.repository.SentimentResultRepository;
+import pl.bgnat.master.xsnts.sentiment.service.components.SentimentCalculator;
+import pl.bgnat.master.xsnts.sentiment.service.components.SentimentCalculatorFactory;
 import pl.bgnat.master.xsnts.sentiment.service.components.TokenExtractor;
 
 import java.time.LocalDateTime;
@@ -33,16 +33,18 @@ public class SentimentAnalysisService {
     @Value("${app.sentiment.page-size:10000}")
     private int pageSize;
 
-    private final ProcessedTweetRepository tweetRepo;
-    private final SentimentResultRepository resultRepo;
-    private final SentimentCalculator calculator;
-    private final ObjectMapper mapper;
+    private final ProcessedTweetRepository   tweetRepo;
+    private final SentimentResultRepository  resultRepo;
+    private final SentimentCalculatorFactory calculatorFactory;
+    private final ObjectMapper               mapper;
 
     @Transactional
     public int analyzeAll(SentimentRequest request) {
 
-        var extractor = TokenExtractor.of(request.tokenStrategy());
-        long total    = tweetRepo.countWithoutSentiment(
+        SentimentCalculator calculator = calculatorFactory.choose(request.sentimentModelStrategy());
+        TokenExtractor      extractor  = TokenExtractor.of(request.tokenStrategy());
+
+        long total = tweetRepo.countWithoutSentiment(
                 request.tokenStrategy(),
                 request.sentimentModelStrategy());
 
@@ -51,18 +53,18 @@ public class SentimentAnalysisService {
         int saved = 0;
 
         while (true) {
-            Page<ProcessedTweet> page =
-                    tweetRepo.findAllWithoutSentiment(
-                            request.tokenStrategy(),
-                            request.sentimentModelStrategy(),
-                            PageRequest.of(0, pageSize));
+            var page = tweetRepo.findAllWithoutSentiment(
+                    request.tokenStrategy(),
+                    request.sentimentModelStrategy(),
+                    PageRequest.of(0, pageSize));
 
             if (page.isEmpty()) break;
 
             List<SentimentResult> buffer = new ArrayList<>(flushBatch);
 
-            for (ProcessedTweet t : page) {
-                buildResult(t, extractor, request).ifPresent(buffer::add);
+            for (ProcessedTweet tweet : page) {
+                buildResult(tweet, extractor, calculator, request).ifPresent(buffer::add);
+
                 if (buffer.size() == flushBatch) {
                     resultRepo.saveAll(buffer);
                     saved += buffer.size();
@@ -81,6 +83,7 @@ public class SentimentAnalysisService {
 
     private Optional<SentimentResult> buildResult(ProcessedTweet tweet,
                                                   TokenExtractor extractor,
+                                                  SentimentCalculator calculator,
                                                   SentimentRequest request) {
         try {
             List<String> tokens = mapper.readValue(extractor.extract(tweet),
@@ -95,7 +98,6 @@ public class SentimentAnalysisService {
                     .score(score.value())
                     .analysisDate(LocalDateTime.now())
                     .build());
-
         } catch (Exception e) {
             log.warn("Tweet {} pominięty – {}", tweet.getId(), e.getMessage());
             return Optional.empty();

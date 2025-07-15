@@ -26,10 +26,9 @@ public class SentimentResult {
             allocationSize = 1)
     private Long id;
 
-    @OneToOne
-    @JoinColumn(name = "processed_tweet_id",
-            referencedColumnName = "id",
-            nullable = false)
+    // powinno być:
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "processed_tweet_id", nullable = false)
     private ProcessedTweet processedTweet;
 
     @Enumerated(EnumType.STRING)
