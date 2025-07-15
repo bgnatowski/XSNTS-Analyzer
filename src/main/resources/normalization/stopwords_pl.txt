@@ -6,6 +6,8 @@ zł
 www
 pl
 ul
+si
+ci
 tel
 hab
 prof
@@ -120,7 +122,6 @@ on
 one
 oraz
 pan
-po
 pod
 ponad
 ponieważ
@@ -153,6 +154,7 @@ teraz
 też
 to
 trzeba
+a
 tu
 tych
 tylko
@@ -192,3 +194,10 @@ wy
 oni
 dzień
 user
+doorhandle
+profilehandle
+whatsapp
+click
+phone
+doorfittings
+hardwarefittings

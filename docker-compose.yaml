@@ -21,6 +21,19 @@ services:
       retries: 5
     networks:
       - backend
+  sentiment-hf:
+    build: ./sentiment-hf
+    container_name: sentiment-hf
+    networks: [backend]
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-fs", "http://localhost:8000/sentiment",
+             "-H", "Content-Type: application/json",
+             "-d", "{\"text\":\"ok\"}"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   # ------------------------
   # Zookeeper for Kafka
@@ -53,26 +66,6 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
     networks:
       - backend
-
-  # ---------------------------
-  # Scrapper Microservice App
-  # ---------------------------
-#  scrapper-app:
-#    container_name: scrapper-app
-#    build: .
-#    depends_on:
-#      - scrapper-db
-#      - kafka
-#    ports:
-#      - "8080:8080"
-#    environment:
-#      SPRING_PROFILES_ACTIVE: docker
-#      SPRING_DATASOURCE_URL: jdbc:postgresql://scrapper-db:5432/scrapper_db
-#      SPRING_DATASOURCE_USERNAME: postgres_scrapper
-#      SPRING_DATASOURCE_PASSWORD: postgres_scrapper_pass
-#      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-#    networks:
-#      - backend
 
 volumes:
   scrapper_db_data:
