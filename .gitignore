@@ -43,3 +43,5 @@ src/main/resources/application-secret.yaml
 /cookies/
 /chrome_proxy_ext/
 /topic_models/
+/output/csv/
+/output/
