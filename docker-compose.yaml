@@ -1,5 +1,8 @@
+version: '3.8'
 services:
-  # --- SCRAPPER MICROSERVICE ---
+  # -----------------------------------
+  # PostgreSQL for Scrapper Microservice
+  # -----------------------------------
   scrapper-db:
     container_name: scrapper-db
     image: postgres:15-alpine
@@ -12,31 +15,68 @@ services:
     volumes:
       - scrapper_db_data:/var/lib/postgresql/data
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U postgres_scrapper -d scrapper" ]
+      test: ["CMD-SHELL", "pg_isready -U postgres_scrapper -d scrapper_db"]
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - backend
 
+  # ------------------------
+  # Zookeeper for Kafka
+  # ------------------------
+  zookeeper:
+    container_name: zookeeper
+    image: confluentinc/cp-zookeeper:7.9.0.arm64
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - backend
+
+  # ------------------------
+  # Kafka Broker
+  # ------------------------
+  kafka:
+    container_name: kafka
+    image: confluentinc/cp-kafka:7.9.0.arm64
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    networks:
+      - backend
+
+  # ---------------------------
+  # Scrapper Microservice App
+  # ---------------------------
 #  scrapper-app:
 #    container_name: scrapper-app
-#    build:
-#      context: ./
-#      dockerfile: scrapper-backend-dev.Dockerfile
+#    build: .
 #    depends_on:
 #      - scrapper-db
+#      - kafka
+#    ports:
+#      - "8080:8080"
 #    environment:
 #      SPRING_PROFILES_ACTIVE: docker
-#      DB_HOST: scrapper-db
-#      DB_PORT: "5432"
-#      DB_NAME: scrapper_db
-#      DB_USERNAME: postgres_scrapper
-#      DB_PASSWORD: postgres_scrapper_pass
-#    ports:
-#      - "8282:8282"
-#    deploy:
-#      replicas: 1
-#      restart_policy:
-#        condition: on-failure
+#      SPRING_DATASOURCE_URL: jdbc:postgresql://scrapper-db:5432/scrapper_db
+#      SPRING_DATASOURCE_USERNAME: postgres_scrapper
+#      SPRING_DATASOURCE_PASSWORD: postgres_scrapper_pass
+#      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+#    networks:
+#      - backend
 
 volumes:
-    scrapper_db_data:
+  scrapper_db_data:
+
+networks:
+  backend:
+    driver: bridge

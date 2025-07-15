@@ -6,17 +6,70 @@ spring:
   profiles:
     active: ${SPRING_PROFILES_ACTIVE}
   dataSource:
-    url: jdbc:postgresql://localhost:5433/scrapper
+    url: jdbc:postgresql://localhost:5433/scrapper_db
     driverClassName: org.postgresql.Driver
     username: postgres_scrapper
     password: postgres_scrapper_pass
   jpa:
-    hibernate:
-      dialect: org.postgresql.Driver
-      ddlAuto: update
+    database-platform: org.hibernate.dialect.PostgreSQLDialect  # [5]
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        ddlAuto: update
+        format_sql: true
     showSql: false
-  properties:
-    hibernate:
-      format_sql: true
-    database: postgresql
-    databasePlatform: org.hibernate.dialect.PostgreSQLDialect
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: tweet-refresh-group
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.LongDeserializer
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.LongSerializer
+
+proxy-seller:
+  username: &proxy-username dummy-proxy-username
+  password: &proxy-password dummy-proxy-password
+  port: &proxy-port 1234
+
+x:
+  credentials:
+    -
+      username: dummyUsername1
+      email: dummyEmail1@gmail.com
+      password: dummyPass1
+      cookie-path: "cookies1.json"
+      proxy:
+        host: ""
+        port: ""
+        username: ""
+        password: ""
+      use-proxy: false
+    -
+      username: dummyUsername2
+      email: dummyEmail2@gmail.com
+      password: dummyPass2
+      cookie-path: "cookies2.json"
+      use-proxy: true
+      proxy:
+        host: 123.123.123.123
+        port: *proxy-port
+        username: *proxy-username
+        password: *proxy-password
+
+adspower:
+  userIds:
+    USER_1: "xxx"
+    USER_2: "yyy"
+    USER_3: "zzz"
+    USER_4: "aaa"
+    USER_5: "bbb"
+
+app:
+  sentiment:
+    lexicon-path: classpath:sentiment/polish_lexicon.tsv
+    positive-threshold: 1.0
+    negative-threshold: -1.0

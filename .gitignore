@@ -34,3 +34,14 @@ build/
 
 ### MAC OS ###
 .DS_Store
+
+### Project Related ###
+.env
+cookies.json
+application-secret.yml.
+src/main/resources/application-secret.yaml
+/cookies/
+/chrome_proxy_ext/
+/topic_models/
+/output/csv/
+/output/
