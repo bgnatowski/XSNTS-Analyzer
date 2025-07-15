@@ -1,0 +1,8 @@
+@misc{tabularisai_2025,
+    author       = { tabularisai and Samuel Gyamfi and Vadim Borisov and Richard H. Schreiber },
+    title        = { multilingual-sentiment-analysis (Revision 69afb83) },
+    year         = 2025,
+    url          = { https://huggingface.co/tabularisai/multilingual-sentiment-analysis },
+    doi          = { 10.57967/hf/5968 },
+    publisher    = { Hugging Face }
+}
