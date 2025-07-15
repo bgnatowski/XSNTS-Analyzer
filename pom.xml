@@ -180,4 +180,23 @@
         </plugins>
     </build>
 
+    <licenses>
+        <license>
+            <name>MIT License</name>
+            <url>https://opensource.org/licenses/MIT</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+
+    <developers>
+        <developer>
+            <name>Bartosz Gnatowski</name>
+            <organization>UEK / MSc thesis</organization>
+        </developer>
+    </developers>
+
+    <url>https://github.com/bgnatowski/XSNTS-Analyzer</url>
+
+
 </project>
