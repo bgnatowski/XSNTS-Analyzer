@@ -116,12 +116,6 @@
             <version>${lingua.version}</version>
         </dependency>
 
-        <dependency>
-            <groupId>com.ibm.icu</groupId>
-            <artifactId>icu4j</artifactId>
-            <version>75.1</version>
-        </dependency>
-
 
         <dependency>
             <groupId>org.carrot2</groupId>
