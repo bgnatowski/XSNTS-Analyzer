@@ -31,6 +31,7 @@ public class TextNormalizer {
     private final Pattern whitespacePattern = createWhitespacePattern();
     private final Pattern multiHashPattern  = createMultiHashPattern();
     private final Pattern orphanHashPattern = createOrphanHashPattern();
+
     /**
      * Wykonuje pełen proces normalizacji i tokenizacji tekstu.
      */
