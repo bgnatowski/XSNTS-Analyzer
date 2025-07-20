@@ -5,7 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import pl.bgnat.master.xsnts.topicmodeling.dto.Metrics;
+import pl.bgnat.master.xsnts.scrapper.dto.Metrics;
 import pl.bgnat.master.xsnts.scrapper.model.Tweet;
 import pl.bgnat.master.xsnts.scrapper.pages.TweetDetailPage;
 

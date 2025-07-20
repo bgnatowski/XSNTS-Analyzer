@@ -5,7 +5,7 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.WebElement;
 import org.springframework.util.StringUtils;
-import pl.bgnat.master.xsnts.topicmodeling.dto.Metrics;
+import pl.bgnat.master.xsnts.scrapper.dto.Metrics;
 
 import java.time.LocalDateTime;
 import java.time.ZonedDateTime;

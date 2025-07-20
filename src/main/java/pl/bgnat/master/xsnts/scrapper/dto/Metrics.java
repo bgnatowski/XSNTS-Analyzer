@@ -1,4 +1,4 @@
-package pl.bgnat.master.xsnts.topicmodeling.dto;
+package pl.bgnat.master.xsnts.scrapper.dto;
 
 import lombok.Data;
 

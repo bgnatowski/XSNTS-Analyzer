@@ -4,6 +4,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
 import pl.bgnat.master.xsnts.topicmodeling.dto.CoherenceMetrics;
 
 import java.util.*;
@@ -21,7 +22,7 @@ public class TopicCoherenceCalculator {
      * Stała wygładzająca, aby uniknąć logarytmowania zera w PMI i UMass.
      * Zgodna z wartością &epsilon; = 1 w podanych wzorach.
      */
-    private static final double SMOOTHING_CONSTANT = 1.0;
+    private static final double EPSILON = 1.0;
 
     /**
      * Główna metoda obliczeniowa. Zwraca cztery metryki spójności obliczone
@@ -35,7 +36,7 @@ public class TopicCoherenceCalculator {
     public CoherenceMetrics calculateAllMetrics(List<String> topWords,
                                                 List<String> documents) {
         // Wstępna walidacja danych wejściowych
-        if (topWords == null || topWords.size() < 2 || documents == null || documents.isEmpty()) {
+        if (CollectionUtils.isEmpty(topWords) || topWords.size() < 2 || CollectionUtils.isEmpty(documents)) {
             return CoherenceMetrics.empty();
         }
 
@@ -67,17 +68,17 @@ public class TopicCoherenceCalculator {
      */
     private double meanPairwise(List<String> words, ScoreFunction f) {
         double sum = 0;
-        int pairs = 0;
+        int count = 0;
         for (int i = 0; i < words.size() - 1; i++) {
             for (int j = i + 1; j < words.size(); j++) {
                 double score = f.apply(words.get(i), words.get(j));
                 if (!Double.isNaN(score) && !Double.isInfinite(score)) {
                     sum += score;
-                    pairs++;
+                    count++;
                 }
             }
         }
-        return pairs > 0 ? sum / pairs : 0.0;
+        return count > 0 ? sum / count : 0.0;
     }
 
     /* ======================================================================
@@ -89,18 +90,13 @@ public class TopicCoherenceCalculator {
      * Wzór: log2( (P(wi, wj) * D + epsilon) / (P(wi) * P(wj)) ) -- interpretacja z użyciem liczności.
      */
     private double pmi(String w1, String w2, WordCooccurrenceStats s) {
-        int d1 = s.count(w1);
-        int d2 = s.count(w2);
-        int d12 = s.coCount(w1, w2);
+        double pWi = s.prob(w1);
+        double pWj = s.prob(w2);
+        double pWij = s.coProb(w1, w2);
 
-        if (d1 == 0 || d2 == 0) {
-            return Double.NaN;
-        }
+        if (pWi <= 0 || pWj <= 0 || pWij <= 0) return Double.NaN;
 
-        double numerator = (d12 + SMOOTHING_CONSTANT) * s.totalDocuments;
-        double denominator = (double) d1 * d2;
-
-        return Math.log(numerator / denominator) / Math.log(2);
+        return Math.log(pWij / (pWi * pWj)) / Math.log(2);
     }
 
     /**
@@ -109,14 +105,12 @@ public class TopicCoherenceCalculator {
      */
     private double npmi(String w1, String w2, WordCooccurrenceStats s) {
         double pmiScore = pmi(w1, w2, s);
-        double p12 = s.coProb(w1, w2);
+        double pWij = s.coProb(w1, w2);
 
-        double h = -Math.log(p12 + (SMOOTHING_CONSTANT / s.totalDocuments)) / Math.log(2);
+        if (pWij <= 0) return Double.NaN;
+        double normalizer = -Math.log(pWij) / Math.log(2);
 
-        if (Double.isNaN(pmiScore) || h == 0) {
-            return Double.NaN;
-        }
-        return pmiScore / h;
+        return normalizer != 0 ? pmiScore / normalizer : Double.NaN;
     }
 
     /**
@@ -124,13 +118,11 @@ public class TopicCoherenceCalculator {
      * Wzór: log( (D(wi, wj) + epsilon) / D(wi) )
      */
     private double umass(String w1, String w2, WordCooccurrenceStats s) {
-        int d1 = s.count(w1);
-        int d12 = s.coCount(w1, w2);
+        int dWj = s.count(w2);
+        int dWij = s.coCount(w1, w2);
 
-        if (d1 == 0) {
-            return Double.NaN;
-        }
-        return Math.log((d12 + SMOOTHING_CONSTANT) / d1);
+        if (dWj == 0) return Double.NaN;
+        return Math.log((dWij + EPSILON) / (double) dWj);
     }
 
     /* ======================================================================
@@ -192,9 +184,8 @@ public class TopicCoherenceCalculator {
             this.totalDocuments = totalDocuments;
         }
 
-        /** Prawdopodobieństwo wystąpienia słowa w dokumencie. */
-        double prob(String w) {
-            return (double) count(w) / totalDocuments;
+        double prob(String word) {
+            return (double) count(word) / totalDocuments;
         }
 
         /** Prawdopodobieństwo współwystąpienia pary słów w dokumencie. */
@@ -203,8 +194,8 @@ public class TopicCoherenceCalculator {
         }
 
         /** Liczba dokumentów zawierających słowo. */
-        int count(String w) {
-            return wordCounts.getOrDefault(w, 0);
+        int count(String word) {
+            return wordCounts.getOrDefault(word, 0);
         }
 
         /** Liczba dokumentów zawierających oba słowa. */

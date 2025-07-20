@@ -200,21 +200,20 @@ public class MalletTopicModelingService {
         // Ustawienia wstepne pipelineu modelu
         ArrayList<Pipe> pipeList = new ArrayList<>();
         pipeList.add(new CharSequence2TokenSequence(Pattern.compile("\\S+")));
-        pipeList.add(new TokenSequenceLowercase());
 
-        // opcjonalne bigramy
+        // Opcjonalne bigramy
         if (request.isUseBigrams()) pipeList.add(new TokenSequenceNGrams(new int[]{2}));
 
         pipeList.add(new TokenSequence2FeatureSequence()); //wymagane na koncu
         Pipe pipe = new SerialPipes(pipeList);
 
-        // Utwórz instancje
+        // Utwórz instancje z pipelineu
         InstanceList instances = new InstanceList(pipe);
 
+        // Utwórz jedną tablicę z tekstu w dokumencie
         String[] documentsArray = documents.stream()
                 .map(Document::text)
                 .toArray(String[]::new);
-
         instances.addThruPipe(new StringArrayIterator(documentsArray));
 
         int k = request.getNumberOfTopics();
@@ -224,10 +223,12 @@ public class MalletTopicModelingService {
         int numThreadsCalculated = Math.min(numThreads, Runtime.getRuntime().availableProcessors());
         model.setNumThreads(numThreadsCalculated);
 
-        int iterations = Math.min(Optional.ofNullable(request.getMaxIterations()).orElse(defaultIterations), MAX_MODEL_ITER);
+        int iterations = Math.min(Optional.ofNullable(
+                request.getMaxIterations()).orElse(defaultIterations),
+                MAX_MODEL_ITER);
         model.setNumIterations(iterations);
 
-        //  Griffitha: np: alphaSum = 50/k, beta = 0.01, k - liczba tematow
+        // domyślnie: alphaSum = 50/k, beta = 0.01, k - liczba tematow
         double calculatedAlphaSum = this.alphaSum / k;
         double beta = this.beta;
         model.alphaSum = calculatedAlphaSum;

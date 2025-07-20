@@ -2,7 +2,7 @@ package pl.bgnat.master.xsnts.scrapper.pages;
 
 import lombok.extern.slf4j.Slf4j;
 import org.openqa.selenium.*;
-import pl.bgnat.master.xsnts.topicmodeling.dto.Metrics;
+import pl.bgnat.master.xsnts.scrapper.dto.Metrics;
 import pl.bgnat.master.xsnts.scrapper.dto.UserCredential;
 import pl.bgnat.master.xsnts.scrapper.model.Tweet;
 

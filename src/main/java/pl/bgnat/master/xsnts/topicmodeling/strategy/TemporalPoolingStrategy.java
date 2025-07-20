@@ -24,11 +24,15 @@ public class TemporalPoolingStrategy implements TweetPoolingStrategy {
     }
 
     @Override
-    public Map<String, List<ProcessedTweet>> poolTweets(List<ProcessedTweet> processedTweets) {
-        log.info("Rozpoczynam grupowanie {} tweetów według czasu", processedTweets.size());
+    public Map<String, List<ProcessedTweet>> poolTweets(
+            List<ProcessedTweet> processedTweets) {
+        log.info("Rozpoczynam grupowanie {} tweetów według czasu",
+                processedTweets.size());
 
-        Map<String, List<ProcessedTweet>> temporalGroups = processedTweets.stream()
-                .collect(Collectors.groupingBy(this::extractDateKey));
+        Map<String, List<ProcessedTweet>> temporalGroups =
+                processedTweets.stream().collect(
+                        Collectors.groupingBy(this::extractDateKey)
+                );
 
         log.info("Utworzono {} grup temporalnych", temporalGroups.size());
         return temporalGroups;
@@ -36,7 +40,8 @@ public class TemporalPoolingStrategy implements TweetPoolingStrategy {
 
 
     private String extractDateKey(ProcessedTweet tweet) {
-        LocalDateTime postDate = tweet.getOriginalTweet().getPostDate();
+        LocalDateTime postDate = tweet.getOriginalTweet()
+                                            .getPostDate();
         return "day_" + postDate.format(dayFormatter);
     }
 }

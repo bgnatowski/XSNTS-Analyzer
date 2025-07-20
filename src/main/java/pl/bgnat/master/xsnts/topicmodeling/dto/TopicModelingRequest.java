@@ -16,14 +16,14 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class TopicModelingRequest {
     private String tokenStrategy;       // "normal" / "lemmatized"
-    private String topicModel;          // np. LDA (na razie tylko tyle)
-    private boolean isUseBigrams;       // czy uzywac bigramow
-    private Integer numberOfTopics;     // Ustawienie ilosci topicow
-    private String poolingStrategy;     // "hashtag", "temporal", tbd. "author"
+    private String topicModel;          // LDA - w przyszłości możliwe inne
+    private boolean isUseBigrams;       // Czy używać bigramów
+    private Integer numberOfTopics;     // Ustawienie ilości topiców K - pozostałość
+    private String poolingStrategy;     // "hashtag" / "temporal"
     private Integer minDocumentSize;    // Minimalna liczba tweetów w dokumencie
-    private Integer maxIterations;      // Ustawienie ilosci iteracji
+    private Integer maxIterations;      // Ustawienie ilości iteracji
     private LocalDateTime startDate;    // Filtrowanie tweetów od daty
     private LocalDateTime endDate;      // Filtrowanie tweetów do daty
     private String modelName;           // Ustawienie nazwy modelu
-    private boolean skipMentions;       // true sprawia ze do tworzenia dokumentu nie bierze @anonimized
+    private boolean skipMentions;       // Czy zostawiać @anonimized
 }

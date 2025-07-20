@@ -124,7 +124,7 @@ xsnts-analyzer/
     ├── scrapper/ # moduł scrappera
     ├── normalization/ # moduł normalizacji
     ├── sentiment/ # moduł analizy sentymentu
-    └──topicmodeling/ # moduł analizy tematycznej
+    └── topicmodeling/ # moduł analizy tematycznej
 ├── sentiment-hf # aplikacja wystawiająca endpoint do obsługi modelu językowego analizy sentymentu
 ├── docker-compose.yml
 ├── .gitignore
