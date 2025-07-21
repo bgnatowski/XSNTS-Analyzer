@@ -37,6 +37,6 @@ def classify(req: Request):
         logits = model(**inputs).logits
     probs = torch.softmax(logits, dim=-1)[0]
     five_cls = int(torch.argmax(probs))
-    tri_cls  = sentiment_map[five_cls]        # POS / NEU / NEG
+    tri_cls  = sentiment_map[five_cls]  # POS / NEU / NEG
     score    = probs[five_cls].item()
     return {"sentiment": tri_cls, "score": round(score, 4)}

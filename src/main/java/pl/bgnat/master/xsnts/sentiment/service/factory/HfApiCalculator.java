@@ -19,6 +19,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class HfApiCalculator implements SentimentCalculator {
 
+    public static final int MAX_IN_MEMORY_SIZE = 64 * 1024;
     @Value("${app.sentiment.hf-url}")
     private String baseUrl;
 
@@ -32,13 +33,12 @@ public class HfApiCalculator implements SentimentCalculator {
 
     @Override
     public SentimentScore evaluate(Collection<String> tokens) {
-
         String sentence = String.join(" ", tokens);
-
         WebClient client = webClientBuilder
                 .baseUrl(baseUrl)
                 .exchangeStrategies(ExchangeStrategies.builder()
-                        .codecs(c -> c.defaultCodecs().maxInMemorySize(64 * 1024))
+                        .codecs(c -> c.defaultCodecs()
+                                .maxInMemorySize(MAX_IN_MEMORY_SIZE))
                         .build())
                 .build();
 
@@ -52,17 +52,16 @@ public class HfApiCalculator implements SentimentCalculator {
                     .timeout(Duration.ofMillis(timeoutMs))
                     .retry(retryCount)
                     .block();
-
             if (resp == null) throw new IllegalStateException("Empty response");
-
             double val = resp.score();
             SentimentLabel label = switch (resp.sentiment()) {
                 case "POS" -> SentimentLabel.POSITIVE;
                 case "NEG" -> SentimentLabel.NEGATIVE;
                 default     -> SentimentLabel.NEUTRAL;
             };
-            return new SentimentScore(label, val); // pewność modelu co do podanej etykiety; 1 = model całkowicie przekonany, 0.5 ≈ ma wątpliwości
-
+            // score = pewność modelu co do podanej etykiety;
+            // 1 = model całkowicie przekonany, 0.5 ≈ ma wątpliwości
+            return new SentimentScore(label, val);
         } catch (Exception ex) {
             log.warn("HF-API call failed, fallback to NEUTRAL: {}", ex.getMessage());
             return new SentimentScore(SentimentLabel.NEUTRAL, 0.0);

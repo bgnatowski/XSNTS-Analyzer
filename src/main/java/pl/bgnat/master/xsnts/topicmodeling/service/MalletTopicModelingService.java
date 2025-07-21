@@ -51,7 +51,7 @@ import static pl.bgnat.master.xsnts.topicmodeling.model.TopicModelingResult.Mode
 public class MalletTopicModelingService {
 
     public static final int MIN_DOCUMENT_SIZE = 10;
-    public static final int MAX_MODEL_ITER    = 1000;
+    public static final int MAX_MODEL_ITER    = 10000;
     private static final List<Integer> K_GRID = List.of(6, 8, 10, 12, 14);
     private static final Set<String> TWO_LETTER_WHITELIST = Set.of("po", "na", "od", "do");
 

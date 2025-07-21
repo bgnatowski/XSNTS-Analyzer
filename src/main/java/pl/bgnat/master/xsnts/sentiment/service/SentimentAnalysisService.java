@@ -13,6 +13,7 @@ import pl.bgnat.master.xsnts.normalization.repository.ProcessedTweetRepository;
 import pl.bgnat.master.xsnts.sentiment.dto.SentimentRequest;
 import pl.bgnat.master.xsnts.sentiment.model.SentimentResult;
 import pl.bgnat.master.xsnts.sentiment.repository.SentimentResultRepository;
+import pl.bgnat.master.xsnts.sentiment.service.factory.LexiconCalculator;
 import pl.bgnat.master.xsnts.sentiment.service.factory.SentimentCalculator;
 import pl.bgnat.master.xsnts.sentiment.service.factory.SentimentCalculatorFactory;
 import pl.bgnat.master.xsnts.sentiment.service.components.TokenExtractor;
@@ -96,6 +97,7 @@ public class SentimentAnalysisService {
             List<String> tokens = objectMapper.readValue(extractor.extract(tweet),
                     new TypeReference<>() {
                     });
+
             var score = calculator.evaluate(tokens);
 
             return Optional.of(SentimentResult.builder()
