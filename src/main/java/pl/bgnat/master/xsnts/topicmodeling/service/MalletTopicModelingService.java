@@ -126,10 +126,10 @@ public class MalletTopicModelingService {
             CoherenceMetrics metrics = calculateAdvancedCoherence(lda, documents);
 
             // 8. Aktualizuj rekord w bazie
-            updateModelRecord(modelResult, modelPath, metrics, COMPLETED, null);
+            updateModelRecord(modelResult, modelPath, metrics, COMPLETED, bestK, null);
 
 
-            log.info("Topic modeling zakończony pomyślnie. Model ID: {}", modelResult.getId());
+            log.info("Topic modeling zakończony pomyślnie. Model ID: {}, best k: {}", modelResult.getId(), modelResult.getNumberOfTopics());
             logMemoryUsage("Koniec");
 
             TopicModelingResponse response = buildResponse(modelResult);
@@ -137,7 +137,7 @@ public class MalletTopicModelingService {
             return response;
         } catch (Exception e) {
             log.error("Błąd podczas topic modeling: {}", e.getMessage(), e);
-            updateModelRecord(modelResult, null, CoherenceMetrics.empty(),  FAILED, e.getMessage());
+            updateModelRecord(modelResult, null, CoherenceMetrics.empty(),  FAILED, 0, e.getMessage());
             throw new RuntimeException("Topic modeling failed", e);
         }
     }
@@ -181,7 +181,7 @@ public class MalletTopicModelingService {
         List<Long> tweetIds = new ArrayList<>();
 
         for (ProcessedTweet tweet : tweets) {
-            String json = "lemmatized".equals(request.getTokenStrategy())
+            String json = "lemmatized".equalsIgnoreCase(request.getTokenStrategy())
                     ? tweet.getTokensLemmatized() : tweet.getTokens();
 
             sb.append(extractTokensAsText(tweet.getId(), json, request.isSkipMentions()))
@@ -406,6 +406,7 @@ public class MalletTopicModelingService {
                 .modelName(StringUtils.hasLength(request.getModelName()) ? request.getModelName() : generateModelName(request))
                 .numberOfTopics(request.getNumberOfTopics())
                 .poolingStrategy(request.getPoolingStrategy())
+                .isUseBigrams(request.isUseBigrams())
                 .documentsCount(0)
                 .originalTweetsCount(0)
                 .trainingDate(LocalDateTime.now())
@@ -585,9 +586,10 @@ public class MalletTopicModelingService {
 
     private void updateModelRecord(TopicModelingResult model, String modelPath,
                                    CoherenceMetrics coherenceMetrics,
-                                   ModelStatus status, String errorMessage) {
+                                   ModelStatus status, int bestK, String errorMessage) {
         model.setModelPath(modelPath);
         model.setPmi(coherenceMetrics.getPmi());
+        model.setNumberOfTopics(bestK);
         model.setNpmi(coherenceMetrics.getNpmi());
         model.setUci(coherenceMetrics.getUci());
         model.setUmass(coherenceMetrics.getUmass());

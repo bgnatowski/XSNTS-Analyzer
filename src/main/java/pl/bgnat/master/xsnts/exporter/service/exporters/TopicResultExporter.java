@@ -10,6 +10,8 @@ import pl.bgnat.master.xsnts.topicmodeling.repository.TopicResultRepository;
 
 import java.io.FileWriter;
 import java.io.IOException;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
 
 /**
  * Eksportuje tematy pojedynczego modelu LDA do pliku CSV.
@@ -19,33 +21,31 @@ import java.io.IOException;
 @RequiredArgsConstructor
 public class TopicResultExporter implements Exporter {
 
+    private static final DateTimeFormatter ISO = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
+
     private static final String[] HEADER = {
-            "model_id",
-            "model_name",
-            "topic_id",
-            "topic_label",
-            "word_count",
-            "document_count",
-            "average_probability",
-            "pmi_coherence",
-            "npmi_coherence",
-            "uci_coherence",
-            "umass_coherence",
-            "top_words_json"
+            /* ---- dane modelu ---- */
+            "model_id", "model_name", "token_strategy", "pooling_strategy",
+            "number_of_topics", "documents_count", "original_tweets_count",
+            "training_date", "model_pmi", "model_npmi", "model_uci",
+            "model_umass", "model_perplexity",
+            /* ---- dane tematu ---- */
+            "topic_id", "topic_label", "word_count", "document_count",
+            "average_probability", "top_words_json"
     };
 
-    private final TopicResultRepository       topicRepo;
-    private final TopicModelingResultRepository modelRepo;
+    private final TopicResultRepository topicResultRepository;
+    private final TopicModelingResultRepository topicModelingResultRepository;
 
-    /* -----------------------------------------------------------
-       Eksport WYŁĄCZNIE dla jednego modelu (wymagany parametr id)
-       ----------------------------------------------------------- */
     @Override
-    public String export(Long id, String userPath) throws IOException {
+    public String export(Long modelId, String userPath) throws IOException {
 
-        TopicModelingResult model = modelRepo.findById(id)
+        TopicModelingResult model = topicModelingResultRepository.findById(modelId)
                 .orElseThrow(() -> new IllegalArgumentException(
-                        "Brak modelu o ID = " + id));
+                        "Brak modelu o ID = " + modelId));
+
+        List<TopicResult> topics =
+                topicResultRepository.findByTopicModelingResultIdOrderByTopicId(modelId);
 
         String path = CsvWriterUtil.defaultName(
                 "topics_" + model.getModelName(), userPath, "topic_model");
@@ -53,21 +53,31 @@ public class TopicResultExporter implements Exporter {
         try (FileWriter w = CsvWriterUtil.open(path)) {
             CsvWriterUtil.writeLine(w, HEADER);
 
-            for (TopicResult t : topicRepo
-                    .findByTopicModelingResultIdOrderByTopicId(id)) {
+            for (TopicResult t : topics) {
 
                 CsvWriterUtil.writeLine(w,
+                        /* ---- model ---- */
                         String.valueOf(model.getId()),
                         CsvWriterUtil.esc(model.getModelName()),
+                        CsvWriterUtil.esc(model.getTokenStrategy()),
+                        CsvWriterUtil.esc(model.getPoolingStrategy()),
+                        String.valueOf(topics.size()),
+                        String.valueOf(model.getDocumentsCount()),
+                        String.valueOf(model.getOriginalTweetsCount()),
+                        model.getTrainingDate() != null
+                                ? CsvWriterUtil.esc(model.getTrainingDate().format(ISO))
+                                : "NULL",
+                        format(model.getPmi()),
+                        format(model.getNpmi()),
+                        format(model.getUci()),
+                        format(model.getUmass()),
+                        format(model.getPerplexity()),
+                        /* ---- temat ---- */
                         String.valueOf(t.getTopicId()),
                         CsvWriterUtil.esc(t.getTopicLabel()),
                         String.valueOf(t.getWordCount()),
                         String.valueOf(t.getDocumentCount()),
                         String.valueOf(t.getAverageProbability()),
-                        String.valueOf(t.getPmiCoherence()),
-                        String.valueOf(t.getNpmiCoherence()),
-                        String.valueOf(t.getUciCoherence()),
-                        String.valueOf(t.getUmassCoherence()),
                         CsvWriterUtil.esc(t.getTopWords())
                 );
             }
@@ -75,9 +85,8 @@ public class TopicResultExporter implements Exporter {
         return path;
     }
 
-    @Override
-    public String export(String userPath) {
-        throw new UnsupportedOperationException(
-                "TopicResultExporter wymaga podania modelId");
+    /* pomocnicze – zamienia null na „NULL” */
+    private String format(Double d) {
+        return d != null ? String.valueOf(d) : "NULL";
     }
 }

@@ -6,6 +6,10 @@ import pl.bgnat.master.xsnts.exporter.service.exporters.ProcessedTweetExporter;
 import pl.bgnat.master.xsnts.exporter.service.exporters.SentimentResultExporter;
 import pl.bgnat.master.xsnts.exporter.service.exporters.TopicResultExporter;
 import pl.bgnat.master.xsnts.exporter.service.exporters.TopicSentimentExporter;
+import pl.bgnat.master.xsnts.normalization.dto.TokenStrategyLabel;
+import pl.bgnat.master.xsnts.sentiment.dto.SentimentRequest;
+import pl.bgnat.master.xsnts.sentiment.dto.SentimentStrategyLabel;
+import pl.bgnat.master.xsnts.sentiment.model.SentimentResult;
 
 @Service
 @RequiredArgsConstructor
@@ -19,8 +23,8 @@ public class CsvExportService {
         return processedTweetExporter.export(userPath);
     }
 
-    public String exportSentimentResults(String userPath) throws Exception {
-        return sentimentResultExporter.export(userPath);
+    public String exportSentimentResults(String userPath, SentimentRequest request) throws Exception {
+        return sentimentResultExporter.export(request.tokenStrategy(), request.sentimentModelStrategy(), userPath);
     }
 
     public String exportTopicSentimentTweets(Long topicModelingResultId, String userPath) throws Exception {

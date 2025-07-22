@@ -38,7 +38,7 @@ public class TopicSentimentExporter implements Exporter {
         List<TopicSentimentStatsEntity> rows = topicSentimentStatsRepository.findByModelIdOrderByTopicId(modelId);
 
         String file = CsvWriterUtil.defaultName(
-                "topic_sentiment_stats_" + modelId, userPath, "csv");
+                "topic_sentiment_stats_" + modelId, userPath, "topic-sentiment");
 
         try (FileWriter w = CsvWriterUtil.open(file)) {
             CsvWriterUtil.writeLine(w, HEADERS);

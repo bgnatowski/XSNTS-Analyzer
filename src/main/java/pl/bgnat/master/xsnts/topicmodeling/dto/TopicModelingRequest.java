@@ -18,7 +18,7 @@ public class TopicModelingRequest {
     private String tokenStrategy;       // "normal" / "lemmatized"
     private String topicModel;          // LDA - w przyszłości możliwe inne
     private boolean isUseBigrams;       // Czy używać bigramów
-    private Integer numberOfTopics;     // Ustawienie ilości topiców K - pozostałość
+    private Integer numberOfTopics;     // Ustawienie ilości topiców K
     private String poolingStrategy;     // "hashtag" / "temporal"
     private Integer minDocumentSize;    // Minimalna liczba tweetów w dokumencie
     private Integer maxIterations;      // Ustawienie ilości iteracji

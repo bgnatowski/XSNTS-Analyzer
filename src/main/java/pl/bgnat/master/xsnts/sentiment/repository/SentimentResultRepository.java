@@ -31,6 +31,15 @@ public interface SentimentResultRepository extends JpaRepository<SentimentResult
 
     List<SentimentResult> findAllByProcessedTweetIdInAndTokenStrategyAndSentimentModelStrategy(Set<Long> longs, TokenStrategyLabel tokenStrategyLabel, SentimentStrategyLabel sentimentStrategyLabel);
 
+    @Query("SELECT s FROM SentimentResult s " +
+            "JOIN FETCH s.processedTweet p " +
+            "JOIN FETCH p.originalTweet t " +
+            "WHERE s.tokenStrategy = :tokenStrategy " +
+            "AND s.sentimentModelStrategy = :sentimentModelStrategy")
+    List<SentimentResult> findByTokenStrategyAndSentimentModelStrategy(
+            @Param("tokenStrategy") TokenStrategyLabel tokenStrategy,
+            @Param("sentimentModelStrategy") SentimentStrategyLabel sentimentModelStrategy);
+
     @Modifying
     @Transactional
     int deleteByTokenStrategyAndSentimentModelStrategy(

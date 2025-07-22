@@ -4,6 +4,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import pl.bgnat.master.xsnts.exporter.service.CsvExportService;
+import pl.bgnat.master.xsnts.normalization.dto.TokenStrategyLabel;
+import pl.bgnat.master.xsnts.sentiment.dto.SentimentRequest;
+import pl.bgnat.master.xsnts.sentiment.dto.SentimentStrategyLabel;
 
 @RestController
 @RequestMapping("/api/export")
@@ -24,10 +27,12 @@ public class ExportController {
         return ResponseEntity.ok(csv.exportTopicResults(modelId, path));
     }
 
-    /** wyniki sentymentu */
+    /** wyniki sentymentu z filtrowaniem według strategii */
     @GetMapping("/sentiment")
-    public ResponseEntity<String> sentiment(@RequestParam(required = false) String path) throws Exception {
-        return ResponseEntity.ok(csv.exportSentimentResults(path));
+    public ResponseEntity<String> sentiment(
+            @RequestBody SentimentRequest request,
+            @RequestParam(required = false) String path) throws Exception {
+        return ResponseEntity.ok(csv.exportSentimentResults(path, request));
     }
 
     /** wyniki topic sentymentu **/

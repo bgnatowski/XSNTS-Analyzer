@@ -15,8 +15,6 @@ XSNTS-Analyzer jest aplikacją w ramach projektu do pracy magisterskiej na Uniwe
 **Kierunek:** Informatyka Stosowana\
 **Specjalność:** Systemy inteligentne
 
-
-
 ## Spis treści
 1. [Opis projektu](#opis-projektu)
 2. [Najważniejsze funkcjonalności](#najwa%C5%BCniejsze-funkcjonalno%C5%9Bci)

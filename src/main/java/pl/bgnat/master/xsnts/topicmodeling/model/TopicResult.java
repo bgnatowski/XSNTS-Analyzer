@@ -42,17 +42,4 @@ public class TopicResult {
 
     @Column(name = "average_probability")
     private Double averageProbability; // Średnie prawdopodobieństwo występowania danego tematu w dokumentach, które utworzyły model
-
-    @Column(name = "pmi_coherence")
-    private Double pmiCoherence;
-
-    @Column(name = "npmi_coherence")
-    private Double npmiCoherence;
-
-    @Column(name = "uci_coherence")
-    private Double uciCoherence;
-
-    @Column(name = "umass_coherence")
-    private Double umassCoherence;
-
 }
