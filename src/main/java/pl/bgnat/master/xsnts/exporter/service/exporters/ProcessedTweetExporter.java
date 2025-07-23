@@ -24,7 +24,7 @@ import org.springframework.data.domain.Sort;
 public class ProcessedTweetExporter implements Exporter {
     private static final DateTimeFormatter ISO = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
     private static final String[] HEAD_PROCESSED = { "processed_tweet_id", "tweet_id","username",
-            "normalized_content","tokens", "lemmatized_tokens", "token_count","post_date" };
+            "normalized_content","tokens", "lemmatized_tokens", "token_count","like_count", "repost_count", "comment_count", "views", "post_date" };
 
     private static final int PAGE_SIZE = 1000;
 
@@ -53,6 +53,10 @@ public class ProcessedTweetExporter implements Exporter {
                             CsvWriterUtil.esc(p.getTokens()),
                             CsvWriterUtil.esc(p.getTokensLemmatized()),
                             String.valueOf(p.getTokenCount()),
+                            t != null && t.getLikeCount() != null ? CsvWriterUtil.getNumber(t.getLikeCount()) : "0",
+                            t != null && t.getRepostCount() != null ? CsvWriterUtil.getNumber(t.getRepostCount()) : "0",
+                            t != null && t.getCommentCount() != null ? CsvWriterUtil.getNumber(t.getCommentCount()) : "0",
+                            t != null && t.getViews() != null ? CsvWriterUtil.getNumber(t.getViews()) : "0",
                             t != null && t.getPostDate() != null ?
                                     CsvWriterUtil.esc(t.getPostDate().format(ISO)) : ""
                     );

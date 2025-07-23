@@ -33,6 +33,9 @@ public final class CsvWriterUtil {
 
     public static String esc(String v) { return v == null ? "\"\"" : '"' + v.replace("\"", "\"\"") + '"'; }
 
+    public static String getNumber(Long number) {
+        return Long.toString(number);
+    }
 
     public static void writeLine(FileWriter w, String... cols) throws IOException {
         for (int i = 0; i < cols.length; i++) {

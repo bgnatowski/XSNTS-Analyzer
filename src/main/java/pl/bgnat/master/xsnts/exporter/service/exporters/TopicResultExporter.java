@@ -48,7 +48,7 @@ public class TopicResultExporter implements Exporter {
                 topicResultRepository.findByTopicModelingResultIdOrderByTopicId(modelId);
 
         String path = CsvWriterUtil.defaultName(
-                "topics_" + model.getModelName(), userPath, "topic_model");
+                modelId + "_topics_" + model.getModelName(), userPath, "topic_model");
 
         try (FileWriter w = CsvWriterUtil.open(path)) {
             CsvWriterUtil.writeLine(w, HEADER);
