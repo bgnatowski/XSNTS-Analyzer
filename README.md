@@ -2,7 +2,7 @@
 
 ### PL ([English version below > click me](#en))
 
-XSNTS-Analyzer jest aplikacją w ramach projektu do pracy magisterskiej na Uniwersytecie Ekonomicznym w Krakowie.
+XSNTS-Analyzer (X.com Social Network Topic-Sentiment Analyzer) jest aplikacją w ramach projektu do pracy magisterskiej na Uniwersytecie Ekonomicznym w Krakowie.
 
 **Tytuł:**  
 * PL: *Implementacja aplikacji do analizy danych z platformy X.com: analiza tematyki i sentymentu w badaniu opinii publicznej*
@@ -192,7 +192,7 @@ Nazwy, logotypy i znaki towarowe platformy **X.com** są własnością odpowiedn
 
 ### EN
 
-XSNTS-Analyzer is an application developed for a master’s thesis at the Cracow University of Economics.
+XSNTS-Analyzer (X.com Social Network Topic-Sentiment Analyzer) is an application developed for a master’s thesis at the Cracow University of Economics.
 
 **Title:**
 * EN: *Implementation of an Application for X.com Data Analysis: Topic Modeling and Sentiment Analysis in Public Opinion Research*
