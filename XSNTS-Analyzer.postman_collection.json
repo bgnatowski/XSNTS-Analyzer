@@ -1,0 +1,814 @@
+{
+	"info": {
+		"_postman_id": "08b7c7f1-4520-47ff-80fa-b5bdf3ab0c44",
+		"name": "XSNTS-Analyzer",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "17621774"
+	},
+	"item": [
+		{
+			"name": "normalizacja",
+			"item": [
+				{
+					"name": "process-all",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/processing/process-all",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"processing",
+								"process-all"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "stats",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/processing/stats",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"processing",
+								"stats"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "empty-records",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/processing/empty-records",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"processing",
+								"empty-records"
+							]
+						},
+						"description": "Zwraca listę pustych rekordów (podgląd przed usunięciem)"
+					},
+					"response": []
+				},
+				{
+					"name": "empty-count",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/processing/empty-count",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"processing",
+								"empty-count"
+							]
+						},
+						"description": "Zwraca liczbę pustych rekordów (bez ich usuwania)"
+					},
+					"response": []
+				},
+				{
+					"name": "cleanup-empty",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/processing/cleanup-empty",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"processing",
+								"cleanup-empty"
+							]
+						},
+						"description": "Usuwa rekordy z pustymi polami normalized_content i tokens"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "topicmodelling",
+			"item": [
+				{
+					"name": "lda-normal-hashtag",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"tokenStrategy\": \"normal\",\n  \"topicModel\": \"LDA\",\n  \"isUseBigrams\": false,\n  \"numberOfTopics\": 10,\n  \"poolingStrategy\": \"hashtag\",\n  \"minDocumentSize\": 10,\n  \"maxIterations\": 3000,\n  \"modelName\": \"2025_normal_hashtag_useMentions\",\n  \"startDate\": \"2025-01-01T00:00:00\",\n  \"endDate\": \"2025-12-31T23:59:59\",\n  \"skipMentions\": false\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/topic-modeling/lda/train",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"topic-modeling",
+								"lda",
+								"train"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "testy-lda",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"tokenStrategy\": \"lemmatized\",\n  \"topicModel\": \"LDA\",\n  \"isUseBigrams\": true,\n  \"numberOfTopics\": 10,\n  \"poolingStrategy\": \"hashtag\",\n  \"minDocumentSize\": 9,\n  \"maxIterations\": 2800,\n  \"modelName\": \"LDA_lemma_bigram_hashtag_v10_2025\",\n  \"startDate\": \"2025-01-01T00:00:00\",\n  \"endDate\": \"2025-12-31T23:59:59\",\n  \"skipMentions\": true\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/topic-modeling/lda/train",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"topic-modeling",
+								"lda",
+								"train"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "lda-lemmatized-hashtag",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"tokenStrategy\": \"lemmatized\",\n  \"topicModel\": \"LDA\",\n  \"numberOfTopics\": 10,\n  \"poolingStrategy\": \"hashtag\",\n  \"minDocumentSize\": 10,\n  \"maxIterations\": 3000,\n  \"modelName\": \"LDA_lemmatized_hashtag_v1_2025\",\n  \"startDate\": \"2024-01-01T00:00:00\",\n  \"endDate\": \"2025-12-31T23:59:59\",\n  \"skipMentions\": true\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/topic-modeling/lda/train",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"topic-modeling",
+								"lda",
+								"train"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "lda-temporal",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"numberOfTopics\": 6,\n  \"poolingStrategy\": \"temporal\",\n  \"minDocumentSize\": 10,\n  \"maxIterations\": 3000,\n  \"modelName\": \"Polish_Tweets_Temporal_Analysis_metrics_2025\",\n  \"startDate\": \"2025-01-01T00:00:00\",\n  \"endDate\": \"2025-12-31T23:59:59\"\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/topic-modeling/train",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"topic-modeling",
+								"train"
+							],
+							"query": [
+								{
+									"key": "numberOfTopics",
+									"value": "20",
+									"disabled": true
+								},
+								{
+									"key": "poolingStrategy",
+									"value": "hashtag",
+									"disabled": true
+								},
+								{
+									"key": "minDocumentSize",
+									"value": "5",
+									"disabled": true
+								},
+								{
+									"key": "maxIterations",
+									"value": "1500",
+									"disabled": true
+								},
+								{
+									"key": "modelName",
+									"value": "Polish_Tweets_Analysis_2025",
+									"disabled": true
+								},
+								{
+									"key": "startDate",
+									"value": "2025-01-01T00:00:00",
+									"disabled": true
+								},
+								{
+									"key": "endDate",
+									"value": "2025-12-31T23:59:59\"",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "lista_modeli",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/topic-modeling/models",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"topic-modeling",
+								"models"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "szczegoly_modelu",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/topic-modeling/models/34",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"topic-modeling",
+								"models",
+								"34"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"description": "| Endpoint | Metoda | Opis |\n| --- | --- | --- |\n| `/api/topic-modeling/quick-train` | POST | Szybkie trenowanie z domyślnymi parametrami |\n| `/api/topic-modeling/train` | POST | Zaawansowane trenowanie z pełną konfiguracją |\n| `/api/topic-modeling/models` | GET | Lista dostępnych modeli |\n| `/api/topic-modeling/models/{id}` | GET | Szczegóły konkretnego modelu |"
+		},
+		{
+			"name": "scrapper",
+			"item": [
+				{
+					"name": "popularByKeywordList",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "[\n  \"#drugaTura\",\n  \"#BitwaoPolske\",\n  \"wyniki wyborów\",\n  \"wieczór wyborczy\",\n  \"exit poll\",\n  \"Państwowa Komisja Wyborcza\",\n  \"PKW\",\n  \"prezydent-elekt\",\n  \"nowy prezydent\",\n  \"Pałac Prezydencki\",\n  \"orędzie\",\n  \"zaprzysiężenie\",\n  \"demokracja\",\n  \"spór polityczny\",\n  \"analiza wyników\",\n  \"#PoWyboraach\",\n  \"#PolskaDecyduje\",\n  \"komentarze polityczne\",\n  \"mąż zaufania\",\n  \"karta do głosowania\",\n  \"#MójGłosSięLiczy\",\n  \"#Dziękujemy\",\n  \"suweren\",\n  \"zmiana warty\",\n  \"opozycja\",\n  \"koalicja rządząca\",\n  \"gratulacje dla zwycięzcy\",\n  \"mapa wyborcza\",\n  \"głosy nieważne\",\n  \"kadencja prezydenta\"\n]\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/scrapper/popular",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"scrapper",
+								"popular"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "latestByKeywordList",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "[\n  \"Bielana\",\n  \"Kaczyńskim\",\n  \"Hołowni\",\n  \"Ząbkach\",\n  \"Pałacu Prezydenckim\",\n  \"#nervalol\",\n  \"Kolumbii\",\n  \"Teleranek\",\n  \"Kolumbijczyk\",\n  \"#ElevenF1\",\n  \"Sawicki\",\n  \"#primemma\",\n  \"#rzutkitarczarodzina\",\n  \"Kinga Duda\",\n  \"Widzew\",\n  \"#GERPOL\",\n  \"#gerpol\",\n  \"niemkami\",\n  \"Petru\",\n  \"Jaga\",\n  \"#sgp2\",\n  \"#F1PL\",\n  \"Lisem\",\n  \"Alert RCB\",\n  \"Polaka\",\n  \"Ameryki Południowej\",\n  \"Teksasie\",\n  \"Hołownia\",\n  \"Jagi\",\n  \"Huijsena\"\n]\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/scrapper/latest",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"scrapper",
+								"latest"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "manual-popular",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/scrapper/manual/popular",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"scrapper",
+								"manual",
+								"popular"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "manual-latest",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/scrapper/manual/latest",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"scrapper",
+								"manual",
+								"latest"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "manual-for-you",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/scrapper/manual/for-you",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"scrapper",
+								"manual",
+								"for-you"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "byKeywordWallAndUser",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/scrapper/one?keyword=papież&wallType=latest&user=USER_2",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"scrapper",
+								"one"
+							],
+							"query": [
+								{
+									"key": "keyword",
+									"value": "papież",
+									"description": "keyword"
+								},
+								{
+									"key": "wallType",
+									"value": "latest",
+									"description": "latest / popular"
+								},
+								{
+									"key": "user",
+									"value": "USER_2",
+									"description": "USER_1-5"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "sentiment",
+			"item": [
+				{
+					"name": "analize-all",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"tokenStrategy\": \"LEMMATIZED\",\n    \"sentimentModelStrategy\": \"STANDARD\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/sentiment/analyze-all",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"sentiment",
+								"analyze-all"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "delete-all-by-request",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"tokenStrategy\": \"LEMMATIZED\",\n    \"sentimentModelStrategy\": \"STANDARD\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/sentiment",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"sentiment"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "sentiment-topic",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"tokenStrategy\": \"NORMAL\",\n    \"sentimentModelStrategy\": \"HF_API\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/sentiment/73/stats",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"sentiment",
+								"73",
+								"stats"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Test multilingual-sentiment",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"text\": \"Test sentymentu!\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8000/sentiment",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"sentiment"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "export",
+			"item": [
+				{
+					"name": "export-processed-csv",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/export/processed",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"export",
+								"processed"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "export-topic-results-csv",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/export/topic-results/69",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"export",
+								"topic-results",
+								"69"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "export-sentiment-csv",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"tokenStrategy\": \"NORMAL\",\n    \"sentimentModelStrategy\": \"HF_API\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/export/sentiment",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"export",
+								"sentiment"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "export-topic-sentiment-csv",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/export/topic-sentiment/73",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"export",
+								"topic-sentiment",
+								"73"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "app-status",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/actuator/health",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"actuator",
+						"health"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"variable": [
+		{
+			"key": "keyword",
+			"value": "example",
+			"type": "default"
+		},
+		{
+			"key": "wallType",
+			"value": "latest",
+			"type": "default"
+		},
+		{
+			"key": "processedTweetId",
+			"value": "processedTweetId",
+			"type": "default"
+		},
+		{
+			"key": "modelId",
+			"value": "{modelId}",
+			"type": "default"
+		}
+	]
+}
