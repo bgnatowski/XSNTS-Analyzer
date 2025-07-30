@@ -1,6 +1,5 @@
 version: '3.8'
 services:
-  # -----------------------------------
   # PostgreSQL for Scrapper Microservice
   # -----------------------------------
   scrapper-db:
@@ -22,7 +21,8 @@ services:
     networks:
       - backend
   sentiment-hf:
-    build: ./sentiment-hf
+#    build: ./sentiment-hf # jesli zbuildowano lokalnie sentiment-hf Dockerfile
+    image: bgnatowski/sentiment-hf:1.0
     container_name: sentiment-hf
     networks: [backend]
     ports:
@@ -38,34 +38,35 @@ services:
   # ------------------------
   # Zookeeper for Kafka
   # ------------------------
-  zookeeper:
-    container_name: zookeeper
-    image: confluentinc/cp-zookeeper:7.9.0.arm64
-    environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_TICK_TIME: 2000
-    networks:
-      - backend
+#  zookeeper:
+#    container_name: zookeeper
+#    image: confluentinc/cp-zookeeper:7.9.0.arm64
+#    environment:
+#      ZOOKEEPER_CLIENT_PORT: 2181
+#      ZOOKEEPER_TICK_TIME: 2000
+#    networks:
+#      - backend
 
   # ------------------------
   # Kafka Broker
   # ------------------------
-  kafka:
-    container_name: kafka
-    image: confluentinc/cp-kafka:7.9.0.arm64
-    depends_on:
-      - zookeeper
-    ports:
-      - "9092:9092"
-    environment:
-      KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-    networks:
-      - backend
+#  kafka:
+#    container_name: kafka
+#    image: confluentinc/cp-kafka:7.9.0.arm64
+#    depends_on:
+#      - zookeeper
+#    ports:
+#      - "9092:9092"
+#    environment:
+#      KAFKA_BROKER_ID: 1
+#      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+#      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
+#      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+#      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+#      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+#    networks:
+#      - backend
+#    restart: on-failure
 
 volumes:
   scrapper_db_data:
