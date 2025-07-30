@@ -35,7 +35,7 @@ public class ScrapperService {
 
     private List<String> currentTrendingKeyword = new ArrayList<>();
 
-    @Scheduled(cron = "0 0 */4 * * *")
+    //@Scheduled(cron = "0 0 */4 * * *") // wyłączono ze względów na koniec subskrypcji ads power global
     public void scheduledAlternatingScrape() {
         int hour = LocalDateTime.now().getHour();
         int index = (hour / 4) % 3;
