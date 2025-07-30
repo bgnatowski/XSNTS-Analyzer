@@ -1,0 +1,134 @@
+server:
+  port: ${SERVER_PORT:8081}
+
+spring:
+  application:
+    name: x-scrapper
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://scrapper-db:5432/scrapper_db}
+    driver-class-name: org.postgresql.Driver
+    username: ${SPRING_DATASOURCE_USERNAME:postgres_scrapper}
+    password: ${SPRING_DATASOURCE_PASSWORD:postgres_scrapper_pass}
+    hikari:
+      auto-commit: false
+      connection-timeout: 20000
+      maximum-pool-size: 10
+      minimum-idle: 5
+
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    show-sql: false
+    generate-ddl: true
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        jdbc:
+          batch_size: 1000
+          batch_versioned_data: true
+        order_inserts: true
+        order_updates: true
+        generate_statistics: false
+        connection:
+          provider_disables_autocommit: true
+
+  kafka:
+    enabled: false
+    # Dla kafki nie używaj localhost! Użyj nazwy serwisu z docker-compose, np. kafka:9092
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:kafka:9092}
+
+    consumer:
+      group-id: ${SPRING_KAFKA_CONSUMER_GROUP_ID:tweet-refresh-group}
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.LongDeserializer
+
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.LongSerializer
+
+app:
+  processing:
+    batch-size: ${APP_PROCESSING_BATCH_SIZE:5000}
+    progress-interval: ${APP_PROCESSING_PROGRESS_INTERVAL:10000}
+
+  topic-modeling:
+    stopwords-path: ${APP_TOPIC_STOPWORDS_PATH:classpath:sentiment/stopwords_pl.txt}
+    models-directory: ${APP_TOPIC_MODELS_DIRECTORY_PATH:"./output/topic_models"}
+    responses-directory: ${APP_TOPIC_MODELS_DIRECTORY_PATH:"./output/topic_responses"}
+    default-iterations: ${APP_TOPIC_MODELING_DEFAULT_ITERATIONS:1000}
+    num-threads: ${APP_TOPIC_MODELING_NUM_THREADS:4}
+    alpha-sum: ${APP_TOPIC_MODELING_ALPHA_SUM:50}  # Zwiększone do 50 zgodnie z konfiguracją produkcyjną
+    beta: ${APP_TOPIC_MODELING_BETA:0.01}
+
+  sentiment:
+    lexicon-path: ${APP_SENTIMENT_LEXICON_PATH:classpath:sentiment/polish_lexicon.tsv}
+    lexicon-score-column: ${APP_SENTIMENT_LEXICON_SCORE_COLUMN:3}
+    page-size: ${APP_SENTIMENT_PAGE_SIZE:2000}
+    flush-batch: ${APP_SENTIMENT_FLUSH_BATCH:6000}
+    threshold: ${APP_SENTIMENT_THRESHOLD:0.6}
+    negation-window: ${APP_SENTIMENT_NEGATION_WINDOW:3}
+    intensifier-factor: ${APP_SENTIMENT_INTENSIFIER_FACTOR:1.5}
+    hf-url: ${APP_SENTIMENT_HF_URL:http://sentiment-hf:8000}  # wskazuje na serwis sentiment-hf w docker network
+    timeout-ms: ${APP_SENTIMENT_TIMEOUT_MS:3000}
+    retry: ${APP_SENTIMENT_RETRY:2}
+
+proxy-seller:
+  username: ${PROXY_USERNAME:anonizedUsername}
+  password: ${PROXY_PASSWORD:anonizedPassword}
+  port: ${PROXY_PORT:50100}
+
+x:
+  credentials:
+    - username: ${X_CRED_USERNAME_1:anon1}
+      email: ${X_CRED_EMAIL_1:anon1@gmail.com}
+      password: ${X_CRED_PASSWORD_1:anon1@1!}
+      cookie-path: "cookies1.json"
+      proxy:
+        host: ${X_PROXY_HOST_1:5.22.207.133}
+        port: ${X_PROXY_PORT_1:50100}
+        username: ${X_PROXY_USERNAME_1:anonizedUsername}
+        password: ${X_PROXY_PASSWORD_1:anonizedPassword}
+      use-proxy: true
+    - username: ${X_CRED_USERNAME_2:anon1}
+      email: ${X_CRED_EMAIL_2:anon1@gmail.com}
+      password: ${X_CRED_PASSWORD_2:anon1@1!}
+      cookie-path: "cookies2.json"
+      proxy:
+        host: ${X_PROXY_HOST_2:5.22.207.133}
+        port: ${X_PROXY_PORT_2:50100}
+        username: ${X_PROXY_USERNAME_2:anonizedUsername}
+        password: ${X_PROXY_PASSWORD_2:anonizedPassword}
+      use-proxy: true
+    - username: ${X_CRED_USERNAME_3:anon1}
+      email: ${X_CRED_EMAIL_3:anon1@gmail.com}
+      password: ${X_CRED_PASSWORD_3:anon1@1!}
+      cookie-path: "cookies3.json"
+      proxy:
+        host: ${X_PROXY_HOST_4:5.22.207.133}
+        port: ${X_PROXY_PORT_4:50100}
+        username: ${X_PROXY_USERNAME_4:anonizedUsername}
+        password: ${X_PROXY_PASSWORD_4:anonizedPassword}
+      use-proxy: true
+    - username: ${X_CRED_USERNAME_5:anon1}
+      email: ${X_CRED_EMAIL_5:anon1@gmail.com}
+      password: ${X_CRED_PASSWORD_5:anon1@1!}
+      cookie-path: "cookies5.json"
+      proxy:
+        host: ${X_PROXY_HOST_5:5.22.207.133}
+        port: ${X_PROXY_PORT_5:50100}
+        username: ${X_PROXY_USERNAME_5:anonizedUsername}
+        password: ${X_PROXY_PASSWORD_5:anonizedPassword}
+      use-proxy: true
+
+
+adspower:
+  userIds:
+    USER_1: ${ADS_POWER_USER_1:kwixkpb1}
+    USER_2: ${ADS_POWER_USER_2:kwixkpb2}
+    USER_3: ${ADS_POWER_USER_3:kwixkpb3}
+    USER_4: ${ADS_POWER_USER_4:kwixkpb4}
+    USER_5: ${ADS_POWER_USER_5:kwixkpb5}

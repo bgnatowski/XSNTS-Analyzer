@@ -1,5 +1,105 @@
 version: '3.8'
 services:
+  # -----------------------------------
+  # XSNTS Analyzer
+  # -----------------------------------
+  xsnts-analyzer:
+    image: bgnatowski/xsnts-analyzer:1.2
+    container_name: xsnts-analyzer
+    ports:
+      - "8080:8081" # mapowanie portu na hosta
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    # Lista zmiennych środowiskowych do ustawienia:
+
+    # SERWER I PORT
+    # SERVER_PORT=8081
+
+    # KONFIGURACJA BAZY DANYCH PostgreSQL
+    # SPRING_DATASOURCE_URL=jdbc:postgresql://scrapper-db:5432/scrapper_db
+    # SPRING_DATASOURCE_USERNAME=postgres_scrapper
+    # SPRING_DATASOURCE_PASSWORD=postgres_scrapper_pass
+
+    # KONFIGURACJA KAFKI
+    # SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+    # SPRING_KAFKA_CONSUMER_GROUP_ID=tweet-refresh-group
+
+    # KONFIGURACJA MODUŁU PRZETWARZANIA I ANALIZ
+    # APP_PROCESSING_BATCH_SIZE=5000
+    # APP_PROCESSING_PROGRESS_INTERVAL=10000
+
+    # TOPIC MODELING
+    # APP_TOPIC_STOPWORDS_PATH=classpath:sentiment/stopwords_pl.txt
+    # APP_TOPIC_MODELS_DIRECTORY_PATH=./output/topic_models
+    # APP_TOPIC_RESPONSES_DIRECTORY_PATH=./output/topic_responses
+    # APP_TOPIC_MODELING_DEFAULT_ITERATIONS=1000
+    # APP_TOPIC_MODELING_NUM_THREADS=4
+    # APP_TOPIC_MODELING_ALPHA_SUM=50
+    # APP_TOPIC_MODELING_BETA=0.01
+
+    # SENTIMENT ANALYSIS
+    # APP_SENTIMENT_LEXICON_PATH=classpath:sentiment/polish_lexicon.tsv
+    # APP_SENTIMENT_LEXICON_SCORE_COLUMN=3
+    # APP_SENTIMENT_PAGE_SIZE=2000
+    # APP_SENTIMENT_FLUSH_BATCH=6000
+    # APP_SENTIMENT_THRESHOLD=0.6
+    # APP_SENTIMENT_NEGATION_WINDOW=3
+    # APP_SENTIMENT_INTENSIFIER_FACTOR=1.5
+    # APP_SENTIMENT_HF_URL=http://sentiment-hf:8000
+    # APP_SENTIMENT_TIMEOUT_MS=3000
+    # APP_SENTIMENT_RETRY=2
+
+    # PROXY-SELLER
+    # PROXY_USERNAME=anonizedUsername
+    # PROXY_PASSWORD=anonizedPassword
+    # PROXY_PORT=50100
+
+    # POZOSTAŁE DANE KREDENCJALNE I PROXY DO X.COM - KONFIGURACJA KLIENTÓW (5 jednostek)
+    # X_CRED_USERNAME_1=anon1
+    # X_CRED_EMAIL_1=anon1@gmail.com
+    # X_CRED_PASSWORD_1=anon1@1!
+    # X_PROXY_HOST_1=5.22.207.133
+    # X_PROXY_PORT_1=50100
+    # X_PROXY_USERNAME_1=anonizedUsername
+    # X_PROXY_PASSWORD_1=anonizedPassword
+
+    # X_CRED_USERNAME_2=anon1
+    # X_CRED_EMAIL_2=anon1@gmail.com
+    # X_CRED_PASSWORD_2=anon1@1!
+    # X_PROXY_HOST_2=5.22.207.133
+    # X_PROXY_PORT_2=50100
+    # X_PROXY_USERNAME_2=anonizedUsername
+    # X_PROXY_PASSWORD_2=anonizedPassword
+
+    # X_CRED_USERNAME_3=anon1
+    # X_CRED_EMAIL_3=anon1@gmail.com
+    # X_CRED_PASSWORD_3=anon1@1!
+    # X_PROXY_HOST_4=5.22.207.133
+    # X_PROXY_PORT_4=50100
+    # X_PROXY_USERNAME_4=anonizedUsername
+    # X_PROXY_PASSWORD_4=anonizedPassword
+
+    # X_CRED_USERNAME_5=anon1
+    # X_CRED_EMAIL_5=anon1@gmail.com
+    # X_CRED_PASSWORD_5=anon1@1!
+    # X_PROXY_HOST_5=5.22.207.133
+    # X_PROXY_PORT_5=50100
+    # X_PROXY_USERNAME_5=anonizedUsername
+    # X_PROXY_PASSWORD_5=anonizedPassword
+
+    # ADPOWER USER IDS
+    # ADS_POWER_USER_1=kwixkpb1
+    # ADS_POWER_USER_2=kwixkpb2
+    # ADS_POWER_USER_3=kwixkpb3
+    # ADS_POWER_USER_4=kwixkpb4
+    # ADS_POWER_USER_5=kwixkpb5
+
+    depends_on:
+      - scrapper-db
+    #      - kafka
+    networks:
+      - backend
+  # -----------------------------------
   # PostgreSQL for Scrapper Microservice
   # -----------------------------------
   scrapper-db:

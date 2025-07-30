@@ -77,14 +77,36 @@ W POM znajdują się również biblioteki **Kafka** – obecnie **nieaktywne** (
 ### Uruchomienie w IDE 
 * np IntellijIDEA Community
 
-### Uruchomienie przez Docker Compose
-
+### Uruchomienie przez Docker Compose (wymaga zainstalowania Dockera i AdsPowerGlobal oraz uzupełnienia pliku docker-compose.yaml o propertiesy)
+1. Sklonuj repo i włącz aplikacje poprzez docker compose
 ```bash
 git clone <repo>
 cd xsnts-analyzer
 docker compose up -d --build
 # Aplikacja będzie dostępna na http://localhost:8080
 ```
+2.  Przenieś `tweets_anonymized.csv` do katalogu dockera (z poziomu głównego katalogu):
+```bash
+docker cp ./db-dump/tweets_anonymized.csv scrapper-db:/tmp/tweets_anonymized.csv 
+```
+3. Wejdz do kontenera PostgreSQL
+```bash
+docker exec -it scrapper-db bash 
+```
+4. Włacz klienta
+```bash
+psql -U postgres_scrapper -d scrapper_db
+```
+5. Załąduj plik:
+```bash
+COPY tweet(id, username, content, link, like_count, repost_count, comment_count, views, media_links, post_date, creation_date, update_date, needs_refresh)
+FROM '/tmp/tweets_anonymized.csv' WITH CSV HEADER;
+```
+6. Wyjdz: 
+```bash 
+exit
+```
+7. Korzystaj z endpointów [XSNTS-Analyzer.postman_collection.json](XSNTS-Analyzer.postman_collection.json)
 
 ## REST API
 
@@ -278,12 +300,35 @@ Kafka libraries are present in the **POM** but currently **inactive** (placehold
 
 ### Running with Docker Compose
 
+1. Clone repo and run application via docker compose
 ```bash
 git clone <repo>
 cd xsnts-analyzer
 docker compose up -d --build
 # The application will be available at http://localhost:8080
 ```
+2. Copy `tweets_anonymized.csv` to the Docker container (from the project root directory):
+```bash
+docker cp ./db-dump/tweets_anonymized.csv scrapper-db:/tmp/tweets_anonymized.csv 
+```
+3. Enter the PostgreSQL container:
+```bash
+docker exec -it scrapper-db bash 
+```
+4. Start the PostgreSQL client:
+```bash
+psql -U postgres_scrapper -d scrapper_db
+```
+5. Load the CSV file into the database:
+```bash
+COPY tweet(id, username, content, link, like_count, repost_count, comment_count, views, media_links, post_date, creation_date, update_date, needs_refresh)
+FROM '/tmp/tweets_anonymized.csv' WITH CSV HEADER;
+```
+6. Exit the container shell:
+```bash 
+exit
+```
+7. Use the API endpoints as described in [XSNTS-Analyzer.postman_collection.json](XSNTS-Analyzer.postman_collection.json)
 
 
 ## REST API
