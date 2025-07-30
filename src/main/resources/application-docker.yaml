@@ -34,21 +34,20 @@ spring:
         connection:
           provider_disables_autocommit: true
 
-  kafka:
-    enabled: false
-    # Dla kafki nie używaj localhost! Użyj nazwy serwisu z docker-compose, np. kafka:9092
-    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:kafka:9092}
-
-    consumer:
-      group-id: ${SPRING_KAFKA_CONSUMER_GROUP_ID:tweet-refresh-group}
-      auto-offset-reset: earliest
-      enable-auto-commit: false
-      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.apache.kafka.common.serialization.LongDeserializer
-
-    producer:
-      key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.apache.kafka.common.serialization.LongSerializer
+#  kafka:
+#    enabled: false
+#    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:kafka:9092}
+#
+#    consumer:
+#      group-id: ${SPRING_KAFKA_CONSUMER_GROUP_ID:tweet-refresh-group}
+#      auto-offset-reset: earliest
+#      enable-auto-commit: false
+#      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+#      value-deserializer: org.apache.kafka.common.serialization.LongDeserializer
+#
+#    producer:
+#      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+#      value-serializer: org.apache.kafka.common.serialization.LongSerializer
 
 app:
   processing:
@@ -61,7 +60,7 @@ app:
     responses-directory: ${APP_TOPIC_MODELS_DIRECTORY_PATH:"./output/topic_responses"}
     default-iterations: ${APP_TOPIC_MODELING_DEFAULT_ITERATIONS:1000}
     num-threads: ${APP_TOPIC_MODELING_NUM_THREADS:4}
-    alpha-sum: ${APP_TOPIC_MODELING_ALPHA_SUM:50}  # Zwiększone do 50 zgodnie z konfiguracją produkcyjną
+    alpha-sum: ${APP_TOPIC_MODELING_ALPHA_SUM:50}
     beta: ${APP_TOPIC_MODELING_BETA:0.01}
 
   sentiment:
@@ -72,7 +71,7 @@ app:
     threshold: ${APP_SENTIMENT_THRESHOLD:0.6}
     negation-window: ${APP_SENTIMENT_NEGATION_WINDOW:3}
     intensifier-factor: ${APP_SENTIMENT_INTENSIFIER_FACTOR:1.5}
-    hf-url: ${APP_SENTIMENT_HF_URL:http://sentiment-hf:8000}  # wskazuje na serwis sentiment-hf w docker network
+    hf-url: ${APP_SENTIMENT_HF_URL:http://sentiment-hf:8000}
     timeout-ms: ${APP_SENTIMENT_TIMEOUT_MS:3000}
     retry: ${APP_SENTIMENT_RETRY:2}
 
